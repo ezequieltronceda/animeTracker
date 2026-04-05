@@ -35,6 +35,14 @@ export const STATUS_LABELS: Record<string, string> = {
 
 export const DAYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as const;
 
+const SEASON_ORDER: { [key: string]: number } = {
+  winter: 1,
+  spring: 2,
+  summer: 3,
+  fall: 4,
+  autumn: 4,
+};
+
 export function formatSeasonName(name: string): string {
   if (!name) return '';
   
@@ -65,4 +73,24 @@ export function formatSeasonName(name: string): string {
   }
   
   return name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1').trim();
+}
+
+export function getSeasonSortValue(name: string): number {
+  const lower = name.toLowerCase();
+  const yearMatch = name.match(/(\d{4}|\d{2})$/);
+  const year = yearMatch ? parseInt(yearMatch[1]) : new Date().getFullYear();
+  
+  let seasonNum = 0;
+  for (const [season, order] of Object.entries(SEASON_ORDER)) {
+    if (lower.includes(season)) {
+      seasonNum = order;
+      break;
+    }
+  }
+  
+  return year * 10 + seasonNum;
+}
+
+export function sortSeasonsByDate(seasons: { id: string; name: string }[]): { id: string; name: string }[] {
+  return [...seasons].sort((a, b) => getSeasonSortValue(b.name) - getSeasonSortValue(a.name));
 }

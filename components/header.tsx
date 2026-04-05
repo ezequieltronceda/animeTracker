@@ -84,7 +84,7 @@ export function Header({ onAddClick, seasons, onCreateSeason }: HeaderProps) {
     <>
       <header className="flex items-center justify-between border-b border-zinc-800 bg-[#18181b] px-4 py-3">
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold text-zinc-100">Olor a Culó</h1>
+          <h1 className="text-lg font-semibold text-zinc-100">Olor a Culo 🥓</h1>
           
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">

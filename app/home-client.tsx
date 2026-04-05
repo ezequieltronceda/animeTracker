@@ -7,10 +7,17 @@ import { AnimeTable } from '@/components/anime-table';
 import { AddAnimeDrawer } from '@/components/add-anime-drawer';
 import { AnimeModal } from '@/components/anime-modal';
 import { ConfirmModal } from '@/components/confirm-modal';
-import type { Anime, Season } from '@/types';
+import { sortSeasonsByDate } from '@/lib/constants';
+import type { Anime, Season, User, UserStatus } from '@/types';
+
+interface PendingChanges {
+  episodesWatched?: { eze?: number[]; pancho?: number[] };
+  status?: { eze?: UserStatus; pancho?: UserStatus };
+  day?: string;
+}
 
 export default function HomeClient() {
-  const { drawerOpen, modalOpen, openDrawer, closeDrawer, selectedAnime, selectedSeason } = useUIStore();
+  const { drawerOpen, modalOpen, openDrawer, closeDrawer, selectedAnime, selectedSeason, setSelectedSeason } = useUIStore();
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [animes, setAnimes] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +30,12 @@ export default function HomeClient() {
       .then(res => res.json())
       .then(data => {
         if (data.seasons) {
-          setSeasons(data.seasons);
+          const sorted = sortSeasonsByDate(data.seasons);
+          setSeasons(sorted);
+          
+          if (!selectedSeason && sorted.length > 0) {
+            setSelectedSeason(sorted[0]);
+          }
         }
         if (data.animes) {
           setAnimes(data.animes);
@@ -55,8 +67,64 @@ export default function HomeClient() {
     fetchData(selectedSeason?.id);
   };
 
-  const handleUpdateAnime = (updatedAnime: Anime) => {
-    setAnimes(prev => prev.map(a => a.id === updatedAnime.id ? updatedAnime : a));
+  const handleSaveChanges = (animeId: string, seasonId: string, changes: PendingChanges) => {
+    const updatePromises: Promise<void>[] = [];
+
+    if (changes.episodesWatched) {
+      for (const user of ['eze', 'pancho'] as User[]) {
+        if (changes.episodesWatched[user]) {
+          updatePromises.push(
+            fetch('/api/anime', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: animeId,
+                seasonId,
+                user,
+                episodesWatched: changes.episodesWatched[user],
+              }),
+            }).then(() => {})
+          );
+        }
+      }
+    }
+
+    if (changes.status) {
+      for (const user of ['eze', 'pancho'] as User[]) {
+        if (changes.status[user]) {
+          updatePromises.push(
+            fetch('/api/anime', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: animeId,
+                seasonId,
+                user,
+                status: changes.status[user],
+              }),
+            }).then(() => {})
+          );
+        }
+      }
+    }
+
+    if (changes.day !== undefined) {
+      updatePromises.push(
+        fetch('/api/anime', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: animeId,
+            seasonId,
+            day: changes.day,
+          }),
+        }).then(() => {})
+      );
+    }
+
+    Promise.all(updatePromises)
+      .then(() => fetchData(seasonId))
+      .catch(err => console.error('Error saving changes:', err));
   };
 
   const handleDeleteClick = (anime: Anime) => {
@@ -110,8 +178,8 @@ export default function HomeClient() {
           </div>
         ) : (
           <AnimeTable 
-            animes={animes} 
-            onUpdateAnime={handleUpdateAnime}
+            animes={animes}
+            onSaveChanges={handleSaveChanges}
             onDeleteAnime={handleDeleteClick}
           />
         )}

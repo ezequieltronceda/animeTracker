@@ -31,7 +31,7 @@ export interface Anime {
 export interface Season {
   id: string;
   name: string;
-  createdAt: Date;
+  createdAt?: Date;
 }
 
 export interface SeasonWithAnime extends Season {

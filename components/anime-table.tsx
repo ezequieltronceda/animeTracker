@@ -5,15 +5,26 @@ import { useUIStore } from '@/store/ui-store';
 import { COLORS, STATUS_LABELS, DAYS } from '@/lib/constants';
 import type { Anime, User, UserStatus } from '@/types';
 
+interface PendingChanges {
+  episodesWatched?: { [user in User]?: number[] };
+  maxEpisode?: { [user in User]?: number };
+  status?: { [user in User]?: UserStatus };
+  day?: string;
+}
+
 interface AnimeTableProps {
   animes: Anime[];
-  onUpdateAnime: (anime: Anime) => void;
+  onSaveChanges: (animeId: string, seasonId: string, changes: PendingChanges) => void;
   onDeleteAnime: (anime: Anime) => void;
 }
 
-export function AnimeTable({ animes, onUpdateAnime, onDeleteAnime }: AnimeTableProps) {
+export function AnimeTable({ animes, onSaveChanges, onDeleteAnime }: AnimeTableProps) {
   const { searchQuery, dayFilter, openModal, editMode } = useUIStore();
   const [lastChecked, setLastChecked] = useState<{ animeId: string; user: User; episode: number } | null>(null);
+  const [pendingChanges, setPendingChanges] = useState<{ [animeId: string]: PendingChanges }>({});
+  const [expandedAnimes, setExpandedAnimes] = useState<Set<string>>(new Set());
+  const [episodeInput, setEpisodeInput] = useState<{ [key: string]: string }>({});
+  const [showEpisodeInput, setShowEpisodeInput] = useState<{ [key: string]: Set<User> }>({});
 
   const filteredAnimes = useMemo(() => {
     if (!Array.isArray(animes) || animes.length === 0) return [];
@@ -32,134 +43,184 @@ export function AnimeTable({ animes, onUpdateAnime, onDeleteAnime }: AnimeTableP
     return result.sort((a, b) => a.order - b.order);
   }, [animes, searchQuery, dayFilter]);
 
-  const handleEpisodeToggle = useCallback(async (anime: Anime, user: User, episode: number) => {
-    if (!editMode) return;
+  const getLocalStatus = (anime: Anime, user: User): UserStatus => {
+    const pending = pendingChanges[anime.id];
+    if (pending?.status?.[user] !== undefined) {
+      return pending.status[user]!;
+    }
+    return anime.users[user].status;
+  };
+
+  const getLocalEpisodes = (anime: Anime, user: User): number[] => {
+    const pending = pendingChanges[anime.id];
+    const displayMax = getDisplayMax(anime, user);
     
-    const currentEpisodes = anime.users[user].episodesWatched;
-    const newEpisodes = currentEpisodes.includes(episode)
+    let episodes: number[];
+    if (pending?.episodesWatched?.[user] !== undefined) {
+      episodes = pending.episodesWatched[user]!;
+    } else {
+      episodes = anime.users[user].episodesWatched;
+    }
+    
+    return episodes.filter(e => e <= displayMax);
+  };
+
+  const getMaxEpisode = (anime: Anime, user: User): number => {
+    const pending = pendingChanges[anime.id];
+    if (pending?.maxEpisode?.[user] !== undefined) {
+      return pending.maxEpisode[user]!;
+    }
+    const watched = anime.users[user].episodesWatched;
+    return watched.length > 0 ? Math.max(...watched) : 0;
+  };
+
+  const getDisplayMax = (anime: Anime, user: User): number => {
+    const maxEp = getMaxEpisode(anime, user);
+    const official = anime.episodes || 0;
+    return Math.max(maxEp, official);
+  };
+
+  const handleEpisodeClick = useCallback((anime: Anime, user: User, episode: number) => {
+    if (!editMode) return;
+    if (episode > getDisplayMax(anime, user)) return;
+
+    const currentEpisodes = getLocalEpisodes(anime, user);
+    const isWatched = currentEpisodes.includes(episode);
+    
+    const newEpisodes = isWatched
       ? currentEpisodes.filter(e => e !== episode)
       : [...currentEpisodes, episode].sort((a, b) => a - b);
-    
-    try {
-      const res = await fetch('/api/anime', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: anime.id,
-          seasonId: anime.seasonId,
-          user,
-          episodesWatched: newEpisodes,
-        }),
-      });
-      
-      if (res.ok) {
-        onUpdateAnime({
-          ...anime,
-          users: {
-            ...anime.users,
-            [user]: {
-              ...anime.users[user],
-              episodesWatched: newEpisodes,
-            },
-          },
-        });
-      }
-    } catch (err) {
-      console.error('Error updating episodes:', err);
-    }
-  }, [editMode, onUpdateAnime]);
 
-  const handleAddEpisode = useCallback(async (anime: Anime, user: User) => {
-    if (!editMode) return;
-    
-    const currentEpisodes = anime.users[user].episodesWatched;
-    const nextEpisode = currentEpisodes.length > 0 ? Math.max(...currentEpisodes) + 1 : 1;
-    const newEpisodes = [...currentEpisodes, nextEpisode].sort((a, b) => a - b);
-    
-    try {
-      const res = await fetch('/api/anime', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: anime.id,
-          seasonId: anime.seasonId,
-          user,
-          episodesWatched: newEpisodes,
-        }),
-      });
-      
-      if (res.ok) {
-        const updatedAnime = {
-          ...anime,
-          episodes: Math.max(anime.episodes || 0, nextEpisode),
-          users: {
-            ...anime.users,
-            [user]: {
-              ...anime.users[user],
-              episodesWatched: newEpisodes,
-            },
-          },
-        };
-        onUpdateAnime(updatedAnime);
-      }
-    } catch (err) {
-      console.error('Error adding episode:', err);
-    }
-  }, [editMode, onUpdateAnime]);
+    setPendingChanges(prev => ({
+      ...prev,
+      [anime.id]: {
+        ...prev[anime.id],
+        episodesWatched: {
+          ...prev[anime.id]?.episodesWatched,
+          [user]: newEpisodes,
+        },
+      },
+    }));
+  }, [editMode]);
 
-  const handleStatusChange = useCallback(async (anime: Anime, user: User, status: UserStatus) => {
-    if (!editMode) return;
-    
-    try {
-      const res = await fetch('/api/anime', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: anime.id,
-          seasonId: anime.seasonId,
-          user,
-          status,
-        }),
-      });
-      
-      if (res.ok) {
-        onUpdateAnime({
-          ...anime,
-          users: {
-            ...anime.users,
-            [user]: {
-              ...anime.users[user],
-              status,
-            },
-          },
-        });
-      }
-    } catch (err) {
-      console.error('Error updating status:', err);
-    }
-  }, [editMode, onUpdateAnime]);
+  const handleSetMaxEpisodes = useCallback((anime: Anime, user: User, value: string) => {
+    const num = parseInt(value, 10);
+    if (isNaN(num) || num < 0) return;
 
-  const handleDayChange = useCallback(async (anime: Anime, day: string) => {
-    if (!editMode) return;
+    const currentEpisodes = getLocalEpisodes(anime, user);
+    const filteredEpisodes = currentEpisodes.filter(e => e <= num);
+
+    setPendingChanges(prev => ({
+      ...prev,
+      [anime.id]: {
+        ...prev[anime.id],
+        maxEpisode: {
+          ...prev[anime.id]?.maxEpisode,
+          [user]: num,
+        },
+        episodesWatched: {
+          ...prev[anime.id]?.episodesWatched,
+          [user]: filteredEpisodes,
+        },
+      },
+    }));
     
-    try {
-      const res = await fetch('/api/anime', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: anime.id,
-          seasonId: anime.seasonId,
-          day,
-        }),
-      });
-      
-      if (res.ok) {
-        onUpdateAnime({ ...anime, day });
-      }
-    } catch (err) {
-      console.error('Error updating day:', err);
+    setEpisodeInput(prev => ({ ...prev, [`${anime.id}-${user}`]: '' }));
+    setShowEpisodeInput(prev => {
+      const newSet = { ...prev };
+      newSet[anime.id]?.delete(user);
+      return newSet;
+    });
+  }, []);
+
+  const handleStatusChange = useCallback((anime: Anime, user: User, status: UserStatus) => {
+    if (!editMode) return;
+
+    let episodesWatched: number[] | undefined;
+    
+    if (status === 'terminado') {
+      const displayMax = getDisplayMax(anime, user);
+      episodesWatched = Array.from({ length: displayMax }, (_, i) => i + 1);
+    } else if (status === 'pendiente' || status === 'dropeado') {
+      episodesWatched = [];
     }
-  }, [editMode, onUpdateAnime]);
+
+    setPendingChanges(prev => ({
+      ...prev,
+      [anime.id]: {
+        ...prev[anime.id],
+        status: {
+          ...prev[anime.id]?.status,
+          [user]: status,
+        },
+        ...(episodesWatched !== undefined && {
+          episodesWatched: {
+            ...prev[anime.id]?.episodesWatched,
+            [user]: episodesWatched,
+          },
+        }),
+      },
+    }));
+  }, [editMode]);
+
+  const handleDayChange = useCallback((anime: Anime, day: string) => {
+    if (!editMode) return;
+
+    setPendingChanges(prev => ({
+      ...prev,
+      [anime.id]: {
+        ...prev[anime.id],
+        day,
+      },
+    }));
+  }, [editMode]);
+
+  const handleSave = useCallback((anime: Anime) => {
+    const changes = pendingChanges[anime.id];
+    if (changes) {
+      onSaveChanges(anime.id, anime.seasonId, changes);
+      setPendingChanges(prev => {
+        const newChanges = { ...prev };
+        delete newChanges[anime.id];
+        return newChanges;
+      });
+    }
+  }, [pendingChanges, onSaveChanges]);
+
+  const hasChanges = (animeId: string) => {
+    return !!pendingChanges[animeId];
+  };
+
+  const toggleExpanded = (animeId: string) => {
+    setExpandedAnimes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(animeId)) {
+        newSet.delete(animeId);
+      } else {
+        newSet.add(animeId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleEpisodeInput = (animeId: string, user: User) => {
+    setShowEpisodeInput(prev => {
+      const newSet = { ...prev };
+      if (!newSet[animeId]) {
+        newSet[animeId] = new Set();
+      }
+      if (newSet[animeId].has(user)) {
+        newSet[animeId].delete(user);
+      } else {
+        newSet[animeId].add(user);
+      }
+      return newSet;
+    });
+  };
+
+  const handleUpdateInput = useCallback((key: string, value: string) => {
+    setEpisodeInput(prev => ({ ...prev, [key]: value }));
+  }, []);
 
   const handleRowClick = useCallback((anime: Anime) => {
     openModal(anime);
@@ -171,67 +232,93 @@ export function AnimeTable({ animes, onUpdateAnime, onDeleteAnime }: AnimeTableP
   };
 
   return (
-    <div className="w-full overflow-auto">
-      <table className="w-full border-collapse text-sm">
-        <thead className="sticky top-0 z-10 bg-[#18181b]">
-          <tr>
-            <th className="w-12 p-2 text-left text-xs font-medium text-zinc-500">#</th>
-            <th className="p-2 text-left text-xs font-medium text-zinc-500">Anime</th>
-            <th className="w-28 p-2 text-left text-xs font-medium text-zinc-500">Día</th>
-            <th className="w-40 p-2 text-left text-xs font-medium text-zinc-500">Eze</th>
-            <th className="w-40 p-2 text-left text-xs font-medium text-zinc-500">Pancho</th>
-            <th className="w-20 p-2 text-left text-xs font-medium text-zinc-500">Eps</th>
-            {editMode && <th className="w-12 p-2 text-left text-xs font-medium text-zinc-500"></th>}
-          </tr>
-        </thead>
-        <tbody>
-          {filteredAnimes.map((anime) => (
-            <AnimeRow
-              key={anime.id}
-              anime={anime}
-              onRowClick={handleRowClick}
-              onEpisodeToggle={handleEpisodeToggle}
-              onAddEpisode={handleAddEpisode}
-              onStatusChange={handleStatusChange}
-              onDayChange={handleDayChange}
-              onDelete={() => onDeleteAnime(anime)}
-              getStatusColor={getStatusColor}
-              lastChecked={lastChecked}
-              setLastChecked={setLastChecked}
-              editMode={editMode}
-            />
-          ))}
-        </tbody>
-      </table>
-      
-      {filteredAnimes.length === 0 && (
-        <div className="p-8 text-center text-zinc-500">
-          No hay animes para mostrar
-        </div>
-      )}
+    <div className="w-full">
+      <div className="w-full overflow-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead className="sticky top-0 z-10 bg-[#18181b]">
+            <tr>
+              <th className="w-12 p-2 text-left text-xs font-medium text-zinc-500">#</th>
+              <th className="p-2 text-left text-xs font-medium text-zinc-500">Anime</th>
+              <th className="w-28 p-2 text-left text-xs font-medium text-zinc-500">Día</th>
+              <th className="w-40 p-2 text-left text-xs font-medium text-zinc-500">Eze</th>
+              <th className="w-40 p-2 text-left text-xs font-medium text-zinc-500">Pancho</th>
+              <th className="w-20 p-2 text-left text-xs font-medium text-zinc-500">Eps</th>
+              {editMode && <th className="w-24 p-2 text-left text-xs font-medium text-zinc-500"></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {filteredAnimes.map((anime) => (
+              <AnimeRow
+                key={anime.id}
+                anime={anime}
+                expanded={expandedAnimes.has(anime.id)}
+                onToggleExpand={() => toggleExpanded(anime.id)}
+                onRowClick={handleRowClick}
+                onEpisodeClick={handleEpisodeClick}
+                onSetMaxEpisodes={handleSetMaxEpisodes}
+                onStatusChange={handleStatusChange}
+                onDayChange={handleDayChange}
+                onSave={() => handleSave(anime)}
+                onDelete={() => onDeleteAnime(anime)}
+                getStatusColor={getStatusColor}
+                getLocalEpisodes={getLocalEpisodes}
+                getLocalStatus={getLocalStatus}
+                getDisplayMax={getDisplayMax}
+                lastChecked={lastChecked}
+                setLastChecked={setLastChecked}
+                setPendingChanges={setPendingChanges}
+                editMode={editMode}
+                hasChanges={hasChanges(anime.id)}
+                episodeInput={episodeInput}
+                showEpisodeInput={showEpisodeInput}
+                onToggleEpisodeInput={toggleEpisodeInput}
+                onUpdateEpisodeInput={handleUpdateInput}
+              />
+            ))}
+          </tbody>
+        </table>
+        
+        {filteredAnimes.length === 0 && (
+          <div className="p-8 text-center text-zinc-500">
+            No hay animes para mostrar
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 interface AnimeRowProps {
   anime: Anime;
+  expanded: boolean;
+  onToggleExpand: () => void;
   onRowClick: (anime: Anime) => void;
-  onEpisodeToggle: (anime: Anime, user: User, episode: number) => void;
-  onAddEpisode: (anime: Anime, user: User) => void;
+  onEpisodeClick: (anime: Anime, user: User, episode: number) => void;
+  onSetMaxEpisodes: (anime: Anime, user: User, value: string) => void;
   onStatusChange: (anime: Anime, user: User, status: UserStatus) => void;
   onDayChange: (anime: Anime, day: string) => void;
+  onSave: () => void;
   onDelete: () => void;
   getStatusColor: (status: UserStatus) => string;
+  getLocalEpisodes: (anime: Anime, user: User) => number[];
+  getLocalStatus: (anime: Anime, user: User) => UserStatus;
+  getDisplayMax: (anime: Anime, user: User) => number;
   lastChecked: { animeId: string; user: User; episode: number } | null;
   setLastChecked: (val: { animeId: string; user: User; episode: number } | null) => void;
+  setPendingChanges: React.Dispatch<React.SetStateAction<{ [animeId: string]: PendingChanges }>>;
   editMode: boolean;
+  hasChanges: boolean;
+  episodeInput: { [key: string]: string };
+  showEpisodeInput: { [key: string]: Set<User> };
+  onToggleEpisodeInput: (animeId: string, user: User) => void;
+  onUpdateEpisodeInput: (key: string, value: string) => void;
 }
 
-function AnimeRow({ anime, onRowClick, onEpisodeToggle, onAddEpisode, onStatusChange, onDayChange, onDelete, getStatusColor, lastChecked, setLastChecked, editMode }: AnimeRowProps) {
+function AnimeRow({ anime, expanded, onToggleExpand, onRowClick, onEpisodeClick, onSetMaxEpisodes, onStatusChange, onDayChange, onSave, onDelete, getStatusColor, getLocalEpisodes, getLocalStatus, getDisplayMax, lastChecked, setLastChecked, setPendingChanges, editMode, hasChanges, episodeInput, showEpisodeInput, onToggleEpisodeInput, onUpdateEpisodeInput }: AnimeRowProps) {
   const users: User[] = ['eze', 'pancho'];
-  const [expanded, setExpanded] = useState(false);
+  const hasOfficialEpisodes = anime.episodes && anime.episodes > 0;
 
-  const handleEpisodeClick = (user: User, episode: number, e: React.MouseEvent) => {
+  const handleEpisodeClickInternal = (user: User, episode: number, e: React.MouseEvent) => {
     if (!editMode) return;
     
     if (e.shiftKey && lastChecked && lastChecked.user === user && lastChecked.animeId === anime.id) {
@@ -240,22 +327,38 @@ function AnimeRow({ anime, onRowClick, onEpisodeToggle, onAddEpisode, onStatusCh
       const start = Math.min(lastEpisode, episode);
       const end = Math.max(lastEpisode, episode);
       
-      for (let i = start; i <= end; i++) {
-        onEpisodeToggle(anime, user, i);
-      }
+      const currentEpisodes = getLocalEpisodes(anime, user);
+      const allWatched = Array.from({ length: end - start + 1 }, (_, i) => start + i).every(ep => currentEpisodes.includes(ep));
+      
+      const newEpisodes = allWatched
+        ? currentEpisodes.filter(e => e < start || e > end)
+        : [...currentEpisodes, ...Array.from({ length: end - start + 1 }, (_, i) => start + i)].sort((a, b) => a - b);
+      
+      setPendingChanges(prev => ({
+        ...prev,
+        [anime.id]: {
+          ...prev[anime.id],
+          episodesWatched: {
+            ...prev[anime.id]?.episodesWatched,
+            [user]: newEpisodes,
+          },
+        },
+      }));
     } else {
-      onEpisodeToggle(anime, user, episode);
+      onEpisodeClick(anime, user, episode);
     }
     setLastChecked({ animeId: anime.id, user, episode });
   };
 
-  const handleStatusSelect = (user: User, status: UserStatus) => {
-    onStatusChange(anime, user, status);
+  const handleRowExpand = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, select, input')) return;
+    onToggleExpand();
   };
 
-  const handleRowExpand = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button, select')) return;
-    setExpanded(!expanded);
+  const getEpisodeCount = (user: User) => {
+    const localEpisodes = getLocalEpisodes(anime, user);
+    const displayMax = getDisplayMax(anime, user);
+    return isUnknown ? localEpisodes.length : displayMax;
   };
 
   const isUnknown = !anime.episodes || anime.episodes === 0;
@@ -303,28 +406,41 @@ function AnimeRow({ anime, onRowClick, onEpisodeToggle, onAddEpisode, onStatusCh
           <StatusBadge 
             status={anime.users.eze.status} 
             color={getStatusColor(anime.users.eze.status)}
-            progress={`${anime.users.eze.episodesWatched.length}/${isUnknown ? '?' : anime.episodes}`}
+            progress={`${getEpisodeCount('eze')}/${isUnknown ? '?' : anime.episodes}`}
           />
         </td>
         <td className="p-2">
           <StatusBadge 
             status={anime.users.pancho.status} 
             color={getStatusColor(anime.users.pancho.status)}
-            progress={`${anime.users.pancho.episodesWatched.length}/${isUnknown ? '?' : anime.episodes}`}
+            progress={`${getEpisodeCount('pancho')}/${isUnknown ? '?' : anime.episodes}`}
           />
         </td>
         <td className="p-2 text-zinc-400">{isUnknown ? '?' : anime.episodes}</td>
         {editMode && (
           <td className="p-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              className="text-red-500 hover:text-red-400 text-xs"
-            >
-              ✕
-            </button>
+            <div className="flex items-center gap-1">
+              {hasChanges && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSave();
+                  }}
+                  className="text-xs bg-indigo-600 text-white px-2 py-1 rounded hover:bg-indigo-500"
+                >
+                  Guardar
+                </button>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                className="text-red-500 hover:text-red-400 text-xs"
+              >
+                ✕
+              </button>
+            </div>
           </td>
         )}
       </tr>
@@ -334,12 +450,18 @@ function AnimeRow({ anime, onRowClick, onEpisodeToggle, onAddEpisode, onStatusCh
           key={`${anime.id}-${user}`}
           anime={anime}
           user={user}
-          onEpisodeClick={handleEpisodeClick}
-          onAddEpisode={onAddEpisode}
-          onStatusSelect={handleStatusSelect}
-          onRowClick={() => onRowClick(anime)}
+          onEpisodeClick={handleEpisodeClickInternal}
+          onSetMaxEpisodes={onSetMaxEpisodes}
+          onStatusChange={onStatusChange}
           getStatusColor={getStatusColor}
+                getLocalEpisodes={getLocalEpisodes}
+                getLocalStatus={getLocalStatus}
+                getDisplayMax={getDisplayMax}
           editMode={editMode}
+          episodeInput={episodeInput}
+          showEpisodeInput={showEpisodeInput}
+          onToggleEpisodeInput={onToggleEpisodeInput}
+          onUpdateEpisodeInput={onUpdateEpisodeInput}
         />
       ))}
     </>
@@ -350,25 +472,34 @@ interface UserSubrowProps {
   anime: Anime;
   user: User;
   onEpisodeClick: (user: User, episode: number, e: React.MouseEvent) => void;
-  onAddEpisode: (anime: Anime, user: User) => void;
-  onStatusSelect: (user: User, status: UserStatus) => void;
-  onRowClick: () => void;
+  onSetMaxEpisodes: (anime: Anime, user: User, value: string) => void;
+  onStatusChange: (anime: Anime, user: User, status: UserStatus) => void;
   getStatusColor: (status: UserStatus) => string;
+  getLocalEpisodes: (anime: Anime, user: User) => number[];
+  getLocalStatus: (anime: Anime, user: User) => UserStatus;
+  getDisplayMax: (anime: Anime, user: User) => number;
   editMode: boolean;
+  episodeInput: { [key: string]: string };
+  showEpisodeInput: { [key: string]: Set<User> };
+  onToggleEpisodeInput: (animeId: string, user: User) => void;
+  onUpdateEpisodeInput: (key: string, value: string) => void;
 }
 
-function UserSubrow({ anime, user, onEpisodeClick, onAddEpisode, onStatusSelect, getStatusColor, editMode }: UserSubrowProps) {
+function UserSubrow({ anime, user, onEpisodeClick, onSetMaxEpisodes, onStatusChange, getStatusColor, getLocalEpisodes, getLocalStatus, getDisplayMax, editMode, episodeInput, showEpisodeInput, onToggleEpisodeInput, onUpdateEpisodeInput }: UserSubrowProps) {
   const userData = anime.users[user];
-  const totalEpisodes = anime.episodes || 0;
-  const isUnknown = totalEpisodes === 0;
-  const maxWatched = userData.episodesWatched.length;
-  const blocks = isUnknown ? Math.ceil(maxWatched / 25) : Math.ceil(totalEpisodes / 25);
+  const localEpisodes = getLocalEpisodes(anime, user);
+  const localStatus = getLocalStatus(anime, user);
+  const displayMax = getDisplayMax(anime, user);
+  const hasOfficial = anime.episodes && anime.episodes > 0;
+  const isUnknown = !hasOfficial;
+  const blocks = Math.ceil(Math.max(displayMax, 1) / 25);
   const [currentBlock, setCurrentBlock] = useState(0);
 
   const startEpisode = currentBlock * 25 + 1;
-  const endEpisode = isUnknown 
-    ? Math.min((currentBlock + 1) * 25, maxWatched)
-    : Math.min((currentBlock + 1) * 25, totalEpisodes);
+  const endEpisode = Math.min((currentBlock + 1) * 25, displayMax);
+
+  const showInput = showEpisodeInput[anime.id]?.has(user);
+  const inputValue = episodeInput[`${anime.id}-${user}`] || '';
 
   return (
     <tr className="border-b border-zinc-800/50 bg-zinc-900/30">
@@ -377,8 +508,8 @@ function UserSubrow({ anime, user, onEpisodeClick, onAddEpisode, onStatusSelect,
           <div className="flex items-center gap-4">
             <span className="w-16 text-xs font-medium text-zinc-500 uppercase">{user}</span>
             <select
-              value={userData.status}
-              onChange={(e) => onStatusSelect(user, e.target.value as UserStatus)}
+              value={localStatus}
+              onChange={(e) => onStatusChange(anime, user, e.target.value as UserStatus)}
               className={`rounded px-2 py-1 text-xs border ${
                 editMode 
                   ? 'bg-zinc-800 text-zinc-300 border-zinc-700 cursor-pointer hover:bg-zinc-700' 
@@ -392,7 +523,7 @@ function UserSubrow({ anime, user, onEpisodeClick, onAddEpisode, onStatusSelect,
               ))}
             </select>
             <span className="text-xs text-zinc-500">
-              {userData.episodesWatched.length}/{isUnknown ? '?' : totalEpisodes} episodes
+              {localEpisodes.length}/{displayMax} episodes
             </span>
           </div>
           
@@ -409,49 +540,26 @@ function UserSubrow({ anime, user, onEpisodeClick, onAddEpisode, onStatusSelect,
               </>
             )}
             <div className="flex flex-wrap gap-1">
-              {isUnknown ? (
-                Array.from({ length: endEpisode - startEpisode + 1 }, (_, i) => {
-                  const episode = startEpisode + i;
-                  const isWatched = userData.episodesWatched.includes(episode);
-                  return (
-                    <button
-                      key={episode}
-                      onClick={(e) => onEpisodeClick(user, episode, e)}
-                      disabled={!editMode}
-                      className={`h-6 w-6 text-xs rounded ${
-                        isWatched 
-                          ? 'bg-indigo-600 text-white' 
-                          : editMode
-                            ? 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
-                            : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
-                      }`}
-                    >
-                      {episode}
-                    </button>
-                  );
-                })
-              ) : (
-                Array.from({ length: endEpisode - startEpisode + 1 }, (_, i) => {
-                  const episode = startEpisode + i;
-                  const isWatched = userData.episodesWatched.includes(episode);
-                  return (
-                    <button
-                      key={episode}
-                      onClick={(e) => onEpisodeClick(user, episode, e)}
-                      disabled={!editMode}
-                      className={`h-6 w-6 text-xs rounded ${
-                        isWatched 
-                          ? 'bg-indigo-600 text-white' 
-                          : editMode
-                            ? 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
-                            : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
-                      }`}
-                    >
-                      {episode}
-                    </button>
-                  );
-                })
-              )}
+              {Array.from({ length: Math.max(0, endEpisode - startEpisode + 1) }, (_, i) => {
+                const episode = startEpisode + i;
+                const isWatched = localEpisodes.includes(episode);
+                return (
+                  <button
+                    key={episode}
+                    onClick={(e) => onEpisodeClick(user, episode, e)}
+                    disabled={!editMode}
+                    className={`h-6 w-6 text-xs rounded ${
+                      isWatched 
+                        ? 'bg-indigo-600 text-white' 
+                        : editMode
+                          ? 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
+                          : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
+                    }`}
+                  >
+                    {episode}
+                  </button>
+                );
+              })}
             </div>
             {blocks > 1 && (
               <button
@@ -462,13 +570,46 @@ function UserSubrow({ anime, user, onEpisodeClick, onAddEpisode, onStatusSelect,
                 →
               </button>
             )}
-            {editMode && (
-              <button
-                onClick={() => onAddEpisode(anime, user)}
-                className="rounded bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300 hover:bg-zinc-600 ml-2"
-              >
-                + Agregar capítulo
-              </button>
+            {editMode && !hasOfficial && (
+              <div className="ml-2">
+                {showInput ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      value={inputValue}
+                      onChange={(e) => {
+                        const key = `${anime.id}-${user}`;
+                        onUpdateEpisodeInput(key, e.target.value);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          onSetMaxEpisodes(anime, user, inputValue);
+                        }
+                        if (e.key === 'Escape') {
+                          onToggleEpisodeInput(anime.id, user);
+                        }
+                      }}
+                      onBlur={() => {
+                        if (inputValue) {
+                          onSetMaxEpisodes(anime, user, inputValue);
+                        } else {
+                          onToggleEpisodeInput(anime.id, user);
+                        }
+                      }}
+                      placeholder="N°"
+                      className="w-16 rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300 border border-zinc-700"
+                      autoFocus
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => onToggleEpisodeInput(anime.id, user)}
+                    className="rounded bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300 hover:bg-zinc-600"
+                  >
+                    + Máx
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
