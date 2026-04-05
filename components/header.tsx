@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useUIStore } from '@/store/ui-store';
 import { DAYS, formatSeasonName } from '@/lib/constants';
 import type { Season } from '@/types';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface HeaderProps {
   onAddClick: () => void;
@@ -193,104 +194,138 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll, onRefre
         </div>
       </header>
 
-      {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-lg bg-[#18181b] p-6 shadow-xl">
-            <h2 className="text-lg font-semibold text-zinc-100 mb-4">Ingresar clave de edición</h2>
-            
-            <input
-              type="password"
-              value={passwordInput}
-              onChange={(e) => {
-                setPasswordInput(e.target.value);
-                if (editPasswordError) clearEditPasswordError();
-              }}
-              placeholder="Clave"
-              className="w-full rounded bg-zinc-800 px-3 py-2 text-zinc-200 border border-zinc-700 focus:outline-none focus:border-indigo-500 mb-2"
-              onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-            />
-            
-            {editPasswordError && (
-              <p className="text-sm text-red-500 mb-4">{editPasswordError}</p>
-            )}
-            
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  setShowPasswordModal(false);
-                  setPasswordInput('');
-                  clearEditPasswordError();
+      <AnimatePresence>
+        {showPasswordModal && (
+          <motion.div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div 
+              className="w-full max-w-sm rounded-lg bg-[#18181b] p-6 shadow-xl"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              <h2 className="text-lg font-semibold text-zinc-100 mb-4">Ingresar clave de edición</h2>
+              
+              <input
+                type="password"
+                value={passwordInput}
+                onChange={(e) => {
+                  setPasswordInput(e.target.value);
+                  if (editPasswordError) clearEditPasswordError();
                 }}
-                className="rounded px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handlePasswordSubmit}
-                className="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500"
-              >
-                Aceptar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                placeholder="Clave"
+                className="w-full rounded bg-zinc-800 px-3 py-2 text-zinc-200 border border-zinc-700 focus:outline-none focus:border-indigo-500 mb-2"
+                onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+              />
+              
+              {editPasswordError && (
+                <p className="text-sm text-red-500 mb-4">{editPasswordError}</p>
+              )}
+              
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setPasswordInput('');
+                    clearEditPasswordError();
+                  }}
+                  className="rounded px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handlePasswordSubmit}
+                  className="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500"
+                >
+                  Aceptar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
 
-      {showCreateSeason && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-lg bg-[#18181b] p-6 shadow-xl">
-            <h2 className="text-lg font-semibold text-zinc-100 mb-4">Crear Temporada</h2>
-            
-            <input
-              type="text"
-              value={newSeasonName}
-              onChange={(e) => setNewSeasonName(e.target.value)}
-              placeholder="Ej: Invierno 2026"
-              className="w-full rounded bg-zinc-800 px-3 py-2 text-zinc-200 border border-zinc-700 focus:outline-none focus:border-indigo-500 mb-4"
-              onKeyDown={(e) => e.key === 'Enter' && handleCreateSeason()}
-            />
-            
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  setShowCreateSeason(false);
-                  setNewSeasonName('');
+        {showCreateSeason && (
+          <motion.div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div 
+              className="w-full max-w-sm rounded-lg bg-[#18181b] p-6 shadow-xl"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              <h2 className="text-lg font-semibold text-zinc-100 mb-4">Crear Temporada</h2>
+              
+              <input
+                type="text"
+                value={newSeasonName}
+                onChange={(e) => setNewSeasonName(e.target.value)}
+                placeholder="Ej: Invierno 2026"
+                className="w-full rounded bg-zinc-800 px-3 py-2 text-zinc-200 border border-zinc-700 focus:outline-none focus:border-indigo-500 mb-4"
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateSeason()}
+              />
+              
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setShowCreateSeason(false);
+                    setNewSeasonName('');
+                  }}
+                  className="rounded px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleCreateSeason}
+                  className="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500"
+                >
+                  Crear
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {showRefreshModal && (
+          <motion.div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div 
+              className="w-full max-w-sm rounded-lg bg-[#18181b] p-6 shadow-xl"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              <h2 className="text-lg font-semibold text-zinc-100 mb-4">Actualizar desde Jikan</h2>
+              
+              <input
+                type="password"
+                value={refreshPasswordInput}
+                onChange={(e) => {
+                  setRefreshPasswordInput(e.target.value);
+                  if (refreshPasswordError) setRefreshPasswordError('');
                 }}
-                className="rounded px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleCreateSeason}
-                className="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500"
-              >
-                Crear
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showRefreshModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-lg bg-[#18181b] p-6 shadow-xl">
-            <h2 className="text-lg font-semibold text-zinc-100 mb-4">Actualizar desde Jikan</h2>
-            
-            <input
-              type="password"
-              value={refreshPasswordInput}
-              onChange={(e) => {
-                setRefreshPasswordInput(e.target.value);
-                if (refreshPasswordError) setRefreshPasswordError('');
-              }}
-              placeholder="Clave"
-              className="w-full rounded bg-zinc-800 px-3 py-2 text-zinc-200 border border-zinc-700 focus:outline-none focus:border-indigo-500 mb-2"
-              onKeyDown={(e) => e.key === 'Enter' && handleRefreshSubmit()}
-            />
-            
-            {refreshPasswordError && (
-              <p className="text-sm text-red-500 mb-4">{refreshPasswordError}</p>
-            )}
+                placeholder="Clave"
+                className="w-full rounded bg-zinc-800 px-3 py-2 text-zinc-200 border border-zinc-700 focus:outline-none focus:border-indigo-500 mb-2"
+                onKeyDown={(e) => e.key === 'Enter' && handleRefreshSubmit()}
+              />
+              
+              {refreshPasswordError && (
+                <p className="text-sm text-red-500 mb-4">{refreshPasswordError}</p>
+              )}
             
             <div className="flex justify-end gap-2">
               <button
@@ -306,9 +341,10 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll, onRefre
                 Actualizar
               </button>
             </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { DAYS } from '@/lib/constants';
+import { DAYS, STATUS_LABELS } from '@/lib/constants';
 import { StatusBadge } from './status-badge';
 import { UserSubrow } from './user-subrow';
 import { MaxEpisodeInput } from './max-episode-input';
 import type { Anime, User, UserStatus } from '@/types';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface AnimeRowProps {
   anime: Anime;
@@ -63,10 +64,12 @@ export function AnimeRow({
 
   return (
     <>
-      <tr 
-        className="cursor-pointer border-b border-zinc-800/50 hover:bg-zinc-800/70 hover-lift transition-all duration-200 animate-fade-in"
+      <motion.tr 
+        className="cursor-pointer border-b border-zinc-800/50 hover:bg-zinc-800/70 hover-lift transition-all duration-200"
         onClick={handleRowExpand}
-        style={{ animationDelay: `${animationDelay}ms` }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: animationDelay / 1000 }}
       >
         <td className="p-3 text-zinc-500 font-mono text-xs">{String(anime.order).padStart(2, '0')}</td>
         <td className="p-3">
@@ -108,18 +111,44 @@ export function AnimeRow({
           )}
         </td>
         <td className="p-2">
-          <StatusBadge 
-            status={anime.users.eze.status} 
-            color={getStatusColor(anime.users.eze.status)}
-            progress={getEpisodeCount('eze')}
-          />
+          {editMode ? (
+            <select
+              value={getLocalStatus('eze')}
+              onChange={(e) => onStatusChange('eze', e.target.value as UserStatus)}
+              className="rounded px-2 py-1 text-xs bg-zinc-800 text-zinc-300 border border-zinc-700"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          ) : (
+            <StatusBadge 
+              status={anime.users.eze.status} 
+              color={getStatusColor(anime.users.eze.status)}
+              progress={getEpisodeCount('eze')}
+            />
+          )}
         </td>
         <td className="p-2">
-          <StatusBadge 
-            status={anime.users.pancho.status} 
-            color={getStatusColor(anime.users.pancho.status)}
-            progress={getEpisodeCount('pancho')}
-          />
+          {editMode ? (
+            <select
+              value={getLocalStatus('pancho')}
+              onChange={(e) => onStatusChange('pancho', e.target.value as UserStatus)}
+              className="rounded px-2 py-1 text-xs bg-zinc-800 text-zinc-300 border border-zinc-700"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          ) : (
+            <StatusBadge 
+              status={anime.users.pancho.status} 
+              color={getStatusColor(anime.users.pancho.status)}
+              progress={getEpisodeCount('pancho')}
+            />
+          )}
         </td>
         <td className="p-2 text-zinc-400">{anime.episodes || '?'}</td>
         {editMode && (
@@ -173,18 +202,33 @@ export function AnimeRow({
             </div>
           </td>
         )}
-      </tr>
+      </motion.tr>
       
-      {expanded && (
-        <tr className="border-b border-zinc-800/50 bg-zinc-900/50 animate-slide-in">
+      <AnimatePresence>
+        {expanded && (
+          <motion.tr 
+            className="border-b border-zinc-800/50 bg-zinc-900/50"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+          >
           <td colSpan={editMode ? 7 : 6} className="p-4">
-            <div className="flex gap-6">
+            <motion.div 
+              className="flex gap-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+            >
               {anime.imageUrl && (
                 <div className="flex-shrink-0">
-                  <img 
+                  <motion.img 
                     src={anime.imageUrl} 
                     alt={anime.title}
-                    className="h-64 w-auto rounded-xl object-cover shadow-2xl animate-scale-in"
+                    className="h-64 w-auto rounded-xl object-cover shadow-2xl"
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.1, duration: 0.3 }}
                   />
                 </div>
               )}
@@ -204,6 +248,23 @@ export function AnimeRow({
                     <div key={user} className="bg-zinc-800/50 rounded-lg p-3">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-sm font-medium text-zinc-300 uppercase">{user}</span>
+                        {editMode ? (
+                          <select
+                            value={getLocalStatus(user)}
+                            onChange={(e) => onStatusChange(user, e.target.value as UserStatus)}
+                            className="rounded px-2 py-0.5 text-xs bg-zinc-700 text-zinc-300 border border-zinc-600"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                              <option key={value} value={value}>{label}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span 
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: getStatusColor(getLocalStatus(user)) }}
+                          />
+                        )}
                         <span className="text-xs text-zinc-500">
                           {getLocalEpisodes(user).length}/{getDisplayMax(user)} eps
                         </span>
@@ -240,10 +301,11 @@ export function AnimeRow({
                   ))}
                 </div>
               </div>
-            </div>
+            </motion.div>
           </td>
-        </tr>
-      )}
+        </motion.tr>
+        )}
+      </AnimatePresence>
       
       {/* Keep subrows hidden for now - we have the expanded view above */}
     </>

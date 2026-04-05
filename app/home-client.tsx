@@ -9,6 +9,54 @@ import { AnimeModal } from '@/components/anime-modal';
 import { ConfirmModal } from '@/components/confirm-modal';
 import { sortSeasonsByDate } from '@/lib/constants';
 import type { Anime, Season, User, UserStatus } from '@/types';
+import { motion, AnimatePresence } from 'framer-motion';
+
+function SkeletonRow() {
+  return (
+    <tr className="border-b border-zinc-800/50">
+      <td className="p-3"><div className="h-4 w-6 bg-zinc-800 rounded animate-pulse" /></td>
+      <td className="p-3">
+        <div className="flex items-center gap-3">
+          <div className="h-14 w-10 bg-zinc-800 rounded-lg animate-pulse" />
+          <div className="space-y-2">
+            <div className="h-4 w-32 bg-zinc-800 rounded animate-pulse" />
+            <div className="h-3 w-16 bg-zinc-800 rounded animate-pulse" />
+          </div>
+        </div>
+      </td>
+      <td className="p-2"><div className="h-6 w-16 bg-zinc-800 rounded animate-pulse" /></td>
+      <td className="p-2"><div className="h-8 w-28 bg-zinc-800 rounded animate-pulse" /></td>
+      <td className="p-2"><div className="h-8 w-28 bg-zinc-800 rounded animate-pulse" /></td>
+      <td className="p-2"><div className="h-4 w-8 bg-zinc-800 rounded animate-pulse" /></td>
+    </tr>
+  );
+}
+
+function SkeletonTable() {
+  return (
+    <div className="w-full">
+      <div className="w-full overflow-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead className="sticky top-0 z-10 bg-[#18181b]">
+            <tr>
+              <th className="w-12 p-2 text-left text-xs font-medium text-zinc-500">#</th>
+              <th className="p-2 text-left text-xs font-medium text-zinc-500">Anime</th>
+              <th className="w-28 p-2 text-left text-xs font-medium text-zinc-500">Día</th>
+              <th className="w-40 p-2 text-left text-xs font-medium text-zinc-500">Eze</th>
+              <th className="w-40 p-2 text-left text-xs font-medium text-zinc-500">Pancho</th>
+              <th className="w-20 p-2 text-left text-xs font-medium text-zinc-500">Eps</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonRow key={i} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 interface PendingChanges {
   episodesWatched?: { eze?: number[]; pancho?: number[] };
@@ -241,17 +289,33 @@ export default function HomeClient() {
       />
       
       <main className="flex-1 overflow-auto p-4">
-        {loading ? (
-          <div className="flex items-center justify-center p-8 text-zinc-500">
-            Cargando...
-          </div>
-        ) : (
-          <AnimeTable 
-            animes={animes}
-            onSaveChanges={handleSaveChanges}
-            onDeleteAnime={handleDeleteClick}
-          />
-        )}
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <SkeletonTable />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="content"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <AnimeTable 
+                animes={animes}
+                onSaveChanges={handleSaveChanges}
+                onDeleteAnime={handleDeleteClick}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       {drawerOpen && selectedSeason && (
