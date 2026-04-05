@@ -40,5 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# docs
 docs/
 prompts/
+
+# project specific
+TODO.md

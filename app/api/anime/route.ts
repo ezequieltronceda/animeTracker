@@ -2,6 +2,17 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { getDocs, collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
+async function fetchJikanScore(malId: number): Promise<number | undefined> {
+  try {
+    const res = await fetch(`https://api.jikan.moe/v4/anime/${malId}`, { next: { revalidate: 3600 } });
+    const data = await res.json();
+    return data.data?.score;
+  } catch (e) {
+    console.error('Error fetching score:', e);
+    return undefined;
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const seasonId = searchParams.get('season');
@@ -25,10 +36,24 @@ export async function GET(request: Request) {
     const animesRef = collection(db, seasonId);
     const animesSnapshot = await getDocs(animesRef);
     
-    const animes = animesSnapshot.docs.map(d => ({
-      id: d.id,
-      seasonId,
-      ...d.data(),
+    const animes = await Promise.all(animesSnapshot.docs.map(async (d) => {
+      const data = d.data();
+      let score = data.score;
+      
+      if (!score && data.malId) {
+        score = await fetchJikanScore(data.malId);
+        if (score) {
+          const animeRef = doc(db, seasonId, d.id);
+          await updateDoc(animeRef, { score });
+        }
+      }
+      
+      return {
+        id: d.id,
+        seasonId,
+        ...data,
+        score,
+      };
     }));
 
     return NextResponse.json({ seasons, animes });
@@ -163,6 +188,91 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting anime:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { action, seasonId } = body;
+
+    if (action === 'refreshAll') {
+      if (!seasonId) {
+        return NextResponse.json({ error: 'Season ID is required' }, { status: 400 });
+      }
+
+      const animesRef = collection(db, seasonId);
+      const animesSnapshot = await getDocs(animesRef);
+      
+      let updated = 0;
+      let failed = 0;
+
+      for (const d of animesSnapshot.docs) {
+        const data = d.data();
+        
+        if (!data.malId) {
+          continue;
+        }
+
+        try {
+          const res = await fetch(`https://api.jikan.moe/v4/anime/${data.malId}`, { 
+            next: { revalidate: 0 } 
+          });
+          
+          if (!res.ok) {
+            failed++;
+            continue;
+          }
+
+          const jikanData = await res.json();
+          const animeData = jikanData.data;
+
+          if (!animeData) {
+            failed++;
+            continue;
+          }
+
+          const updateData: Record<string, any> = {};
+          
+          if (animeData.score) {
+            updateData.score = animeData.score;
+          }
+          if (animeData.episodes && animeData.episodes > 0) {
+            updateData.episodes = animeData.episodes;
+          }
+          if (animeData.images?.jpg?.image_url) {
+            updateData.imageUrl = animeData.images.jpg.image_url;
+          }
+          if (animeData.title) {
+            updateData.title = animeData.title;
+          }
+
+          if (Object.keys(updateData).length > 0) {
+            const animeRef = doc(db, seasonId, d.id);
+            await updateDoc(animeRef, updateData);
+            updated++;
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+        } catch (e) {
+          console.error(`Error updating anime ${d.id}:`, e);
+          failed++;
+        }
+      }
+
+      return NextResponse.json({ 
+        success: true, 
+        updated,
+        failed,
+        total: animesSnapshot.size 
+      });
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  } catch (error: any) {
+    console.error('Error in PATCH:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

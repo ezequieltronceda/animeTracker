@@ -24,6 +24,7 @@ interface AnimeRowProps {
   getDisplayMax: (user: User) => number;
   editMode: boolean;
   hasChanges: boolean;
+  animationDelay?: number;
 }
 
 export function AnimeRow({
@@ -43,6 +44,7 @@ export function AnimeRow({
   getDisplayMax,
   editMode,
   hasChanges,
+  animationDelay = 0,
 }: AnimeRowProps) {
   const users: User[] = ['eze', 'pancho'];
   const [showMaxInput, setShowMaxInput] = useState(false);
@@ -62,20 +64,27 @@ export function AnimeRow({
   return (
     <>
       <tr 
-        className="cursor-pointer border-b border-zinc-800 hover:bg-zinc-800/50"
+        className="cursor-pointer border-b border-zinc-800/50 hover:bg-zinc-800/70 hover-lift transition-all duration-200 animate-fade-in"
         onClick={handleRowExpand}
+        style={{ animationDelay: `${animationDelay}ms` }}
       >
-        <td className="p-2 text-zinc-500">{anime.order}</td>
-        <td className="p-2">
-          <div className="flex items-center gap-2">
+        <td className="p-3 text-zinc-500 font-mono text-xs">{String(anime.order).padStart(2, '0')}</td>
+        <td className="p-3">
+          <div className="flex items-center gap-3">
             {anime.imageUrl && (
               <img 
                 src={anime.imageUrl} 
                 alt={anime.title}
-                className="h-8 w-6 rounded object-cover"
+                className="h-14 w-10 rounded-lg object-cover shadow-lg transition-transform duration-300 group-hover:scale-110"
               />
             )}
-            <span className="font-medium text-zinc-200">{anime.title}</span>
+            <div className="flex flex-col gap-1">
+              <span className="font-medium text-zinc-200 text-sm leading-tight">{anime.title}</span>
+              <span className="text-xs text-amber-400 flex items-center gap-1">
+                <span className="text-amber-500">★</span>
+                {anime.score ? anime.score.toFixed(1) : '-'}
+              </span>
+            </div>
           </div>
         </td>
         <td className="p-2">
@@ -166,21 +175,77 @@ export function AnimeRow({
         )}
       </tr>
       
-      {expanded && users.map((user) => (
-        <UserSubrow
-          key={`${anime.id}-${user}`}
-          anime={anime}
-          user={user}
-          localEpisodes={getLocalEpisodes(user)}
-          localStatus={getLocalStatus(user)}
-          displayMax={getDisplayMax(user)}
-          onEpisodeClick={(episode) => onEpisodeClick(user, episode)}
-          onSetMaxEpisodes={onSetMaxEpisodes}
-          onStatusChange={(status) => onStatusChange(user, status)}
-          getStatusColor={getStatusColor}
-          editMode={editMode}
-        />
-      ))}
+      {expanded && (
+        <tr className="border-b border-zinc-800/50 bg-zinc-900/50 animate-slide-in">
+          <td colSpan={editMode ? 7 : 6} className="p-4">
+            <div className="flex gap-6">
+              {anime.imageUrl && (
+                <div className="flex-shrink-0">
+                  <img 
+                    src={anime.imageUrl} 
+                    alt={anime.title}
+                    className="h-64 w-auto rounded-xl object-cover shadow-2xl animate-scale-in"
+                  />
+                </div>
+              )}
+              <div className="flex-1 flex flex-col gap-4">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-xl font-bold text-zinc-100">{anime.title}</h3>
+                  {anime.score && (
+                    <span className="text-lg text-amber-400 flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-lg">
+                      <span className="text-amber-500">★</span>
+                      {anime.score.toFixed(1)}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  {users.map((user) => (
+                    <div key={user} className="bg-zinc-800/50 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium text-zinc-300 uppercase">{user}</span>
+                        <span className="text-xs text-zinc-500">
+                          {getLocalEpisodes(user).length}/{getDisplayMax(user)} eps
+                        </span>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-1">
+                        {Array.from({ length: Math.min(getDisplayMax(user), 50) }, (_, i) => {
+                          const episode = i + 1;
+                          const isWatched = getLocalEpisodes(user).includes(episode);
+                          return (
+                            <button
+                              key={episode}
+                              onClick={() => onEpisodeClick(user, episode)}
+                              disabled={!editMode}
+                              className={`h-6 w-6 text-xs rounded-md transition-all hover:scale-110 ${
+                                isWatched 
+                                  ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg' 
+                                  : editMode
+                                    ? 'bg-zinc-700/80 text-zinc-400 hover:bg-zinc-600'
+                                    : 'bg-zinc-800 text-zinc-600'
+                              }`}
+                            >
+                              {episode}
+                            </button>
+                          );
+                        })}
+                        {getDisplayMax(user) > 50 && (
+                          <span className="text-xs text-zinc-500 self-center">
+                            +{getDisplayMax(user) - 50} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+      
+      {/* Keep subrows hidden for now - we have the expanded view above */}
     </>
   );
 }

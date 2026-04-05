@@ -22,7 +22,7 @@ export function EpisodeButtons({ episodes, displayMax, onEpisodeClick, editMode 
         <button
           onClick={() => setCurrentBlock(Math.max(0, currentBlock - 1))}
           disabled={currentBlock === 0 || !editMode}
-          className="rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400 disabled:opacity-30"
+          className="rounded bg-zinc-800/80 px-2 py-0.5 text-xs text-zinc-400 disabled:opacity-30 hover-lift transition-all"
         >
           ←
         </button>
@@ -36,12 +36,12 @@ export function EpisodeButtons({ episodes, displayMax, onEpisodeClick, editMode 
               key={episode}
               onClick={() => onEpisodeClick(episode)}
               disabled={!editMode}
-              className={`h-6 w-6 text-xs rounded ${
+              className={`h-7 w-7 text-xs rounded-md transition-all hover-lift ${
                 isWatched 
-                  ? 'bg-indigo-600 text-white' 
+                  ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
                   : editMode
-                    ? 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
-                    : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
+                    ? 'bg-zinc-800/80 text-zinc-500 hover:bg-zinc-700 hover:scale-110'
+                    : 'bg-zinc-900/50 text-zinc-600 cursor-not-allowed'
               }`}
             >
               {episode}
@@ -53,7 +53,7 @@ export function EpisodeButtons({ episodes, displayMax, onEpisodeClick, editMode 
         <button
           onClick={() => setCurrentBlock(Math.min(blocks - 1, currentBlock + 1))}
           disabled={currentBlock >= blocks - 1 || !editMode}
-          className="rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400 disabled:opacity-30"
+          className="rounded bg-zinc-800/80 px-2 py-0.5 text-xs text-zinc-400 disabled:opacity-30 hover-lift transition-all"
         >
           →
         </button>

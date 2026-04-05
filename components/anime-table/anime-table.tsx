@@ -223,7 +223,7 @@ export function AnimeTable({ animes, onSaveChanges, onDeleteAnime }: AnimeTableP
             </tr>
           </thead>
           <tbody>
-            {filteredAnimes.map((anime) => (
+            {filteredAnimes.map((anime, index) => (
               <AnimeRow
                 key={anime.id}
                 anime={anime}
@@ -242,6 +242,7 @@ export function AnimeTable({ animes, onSaveChanges, onDeleteAnime }: AnimeTableP
                 getDisplayMax={(user) => getDisplayMax(anime, user)}
                 editMode={editMode}
                 hasChanges={hasChanges(anime.id)}
+                animationDelay={index * 50}
               />
             ))}
           </tbody>

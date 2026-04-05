@@ -10,9 +10,11 @@ interface HeaderProps {
   seasons?: Season[];
   onCreateSeason: (name: string) => void;
   onSaveAll?: () => void;
+  onRefreshJikan?: () => void;
+  isRefreshing?: boolean;
 }
 
-export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll }: HeaderProps) {
+export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll, onRefreshJikan, isRefreshing }: HeaderProps) {
   const { 
     searchQuery, 
     setSearchQuery, 
@@ -29,9 +31,29 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll }: Heade
   } = useUIStore();
   
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showRefreshModal, setShowRefreshModal] = useState(false);
+  const [refreshPasswordInput, setRefreshPasswordInput] = useState('');
+  const [refreshPasswordError, setRefreshPasswordError] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [showCreateSeason, setShowCreateSeason] = useState(false);
   const [newSeasonName, setNewSeasonName] = useState('');
+
+  const REFRESH_PASSWORD = 'Panchogay';
+
+  const handleRefreshClick = () => {
+    setShowRefreshModal(true);
+    setRefreshPasswordInput('');
+    setRefreshPasswordError('');
+  };
+
+  const handleRefreshSubmit = () => {
+    if (refreshPasswordInput === REFRESH_PASSWORD) {
+      setShowRefreshModal(false);
+      if (onRefreshJikan) onRefreshJikan();
+    } else {
+      setRefreshPasswordError('Clave incorrecta');
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -85,16 +107,16 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll }: Heade
 
   return (
     <>
-      <header className="flex items-center justify-between border-b border-zinc-800 bg-[#18181b] px-4 py-3">
+      <header className="flex items-center justify-between border-b border-zinc-800/50 bg-[#18181b]/80 backdrop-blur-sm px-4 py-3 sticky top-0 z-50">
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold text-zinc-100">Olor a Culo 🥓</h1>
+          <h1 className="text-lg font-semibold text-zinc-100 hover-lift cursor-default">Olor a Culo 🥓</h1>
           
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               <select
                 value={selectedSeason?.id || ''}
                 onChange={handleSeasonChange}
-                className="rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 border border-zinc-700 focus:outline-none focus:border-indigo-500"
+                className="rounded bg-zinc-800/80 px-3 py-1.5 text-sm text-zinc-200 border border-zinc-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
               >
                 <option value="">Todas las temporadas</option>
                 {safeSeasons.map(season => (
@@ -104,7 +126,7 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll }: Heade
               {editMode && (
                 <button
                   onClick={() => setShowCreateSeason(true)}
-                  className="rounded bg-zinc-700 px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-600"
+                  className="rounded bg-zinc-700/80 px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-600 hover-lift"
                   title="Crear temporada"
                 >
                   +
@@ -134,20 +156,29 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll }: Heade
         </div>
 
         <div className="flex items-center gap-2">
+          {onRefreshJikan && (
+            <button
+              onClick={handleRefreshClick}
+              disabled={isRefreshing}
+              className="rounded bg-zinc-700 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover-lift"
+            >
+              {isRefreshing ? '↻ Actualizando...' : '↻ Actualizar Jikan'}
+            </button>
+          )}
           {editMode && getPendingChangesCount() > 0 && onSaveAll && (
             <button
               onClick={onSaveAll}
-              className="rounded bg-amber-600 px-3 py-1.5 text-sm text-white hover:bg-amber-500"
+              className="rounded bg-amber-600 px-3 py-1.5 text-sm text-white hover:bg-amber-500 hover-lift animate-pulse-glow"
             >
               Guardar Todo ({getPendingChangesCount()})
             </button>
           )}
           <button
             onClick={handleEditModeToggle}
-            className={`rounded px-3 py-1.5 text-sm ${
+            className={`rounded px-3 py-1.5 text-sm transition-all hover-lift ${
               editMode 
-                ? 'bg-indigo-600 text-white' 
-                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-600/30' 
+                : 'bg-zinc-800/80 text-zinc-400 hover:bg-zinc-700'
             }`}
           >
             {editMode ? 'Modo edición ON' : 'Editar'}
@@ -155,7 +186,7 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll }: Heade
           
           <button
             onClick={onAddClick}
-            className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-500"
+            className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-500 hover-lift shadow-lg shadow-indigo-600/30 transition-all"
           >
             + Agregar
           </button>
@@ -234,6 +265,45 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll }: Heade
                 className="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500"
               >
                 Crear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRefreshModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-sm rounded-lg bg-[#18181b] p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-zinc-100 mb-4">Actualizar desde Jikan</h2>
+            
+            <input
+              type="password"
+              value={refreshPasswordInput}
+              onChange={(e) => {
+                setRefreshPasswordInput(e.target.value);
+                if (refreshPasswordError) setRefreshPasswordError('');
+              }}
+              placeholder="Clave"
+              className="w-full rounded bg-zinc-800 px-3 py-2 text-zinc-200 border border-zinc-700 focus:outline-none focus:border-indigo-500 mb-2"
+              onKeyDown={(e) => e.key === 'Enter' && handleRefreshSubmit()}
+            />
+            
+            {refreshPasswordError && (
+              <p className="text-sm text-red-500 mb-4">{refreshPasswordError}</p>
+            )}
+            
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowRefreshModal(false)}
+                className="rounded px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleRefreshSubmit}
+                className="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500"
+              >
+                Actualizar
               </button>
             </div>
           </div>

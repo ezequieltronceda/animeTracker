@@ -33,6 +33,7 @@ export default function HomeClient() {
   const [animes, setAnimes] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; anime?: Anime }>({ show: false });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchData = (seasonId?: string) => {
     const url = seasonId ? `/api/anime?season=${encodeURIComponent(seasonId)}` : '/api/anime';
@@ -176,6 +177,36 @@ export default function HomeClient() {
     setDeleteConfirm({ show: false });
   };
 
+  const handleRefreshJikan = async () => {
+    if (!selectedSeason) return;
+    
+    setIsRefreshing(true);
+    
+    try {
+      const res = await fetch('/api/anime', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'refreshAll',
+          seasonId: selectedSeason.id,
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        console.log(`Updated ${data.updated} animes, failed: ${data.failed}`);
+        fetchData(selectedSeason.id);
+      } else {
+        console.error('Refresh failed:', data.error);
+      }
+    } catch (err) {
+      console.error('Error refreshing:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const handleSaveAll = () => {
     Object.entries(pendingChanges).forEach(([animeId, changes]) => {
       const anime = animes.find(a => a.id === animeId);
@@ -199,12 +230,14 @@ export default function HomeClient() {
   }, [selectedSeason]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#09090b]">
+    <div className="flex min-h-screen flex-col">
       <Header 
         onAddClick={openDrawer} 
         seasons={seasons} 
         onCreateSeason={handleCreateSeason}
         onSaveAll={handleSaveAll}
+        onRefreshJikan={handleRefreshJikan}
+        isRefreshing={isRefreshing}
       />
       
       <main className="flex-1 overflow-auto p-4">
