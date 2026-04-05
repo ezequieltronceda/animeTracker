@@ -54,6 +54,7 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll, onRefre
   const [passwordInput, setPasswordInput] = useState('');
   const [showCreateSeason, setShowCreateSeason] = useState(false);
   const [newSeasonName, setNewSeasonName] = useState('');
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const REFRESH_PASSWORD = 'Panchogay';
 
@@ -124,112 +125,138 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll, onRefre
 
   return (
     <>
-      <header className="flex items-center justify-between border-b border-zinc-800/50 bg-[#18181b]/80 backdrop-blur-sm px-4 py-3 sticky top-0 z-50">
-        <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold text-zinc-100 hover-lift cursor-default">Olor a Culo 🥓</h1>
+      <header className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 lg:gap-4 border-b border-zinc-800/50 bg-[#18181b]/80 backdrop-blur-sm px-3 py-3 lg:px-4 lg:py-3 sticky top-0 z-50">
+        <div className="flex items-center gap-2 lg:gap-4 w-full lg:w-auto">
+          <h1 className="text-base lg:text-lg font-semibold text-zinc-100 hover-lift cursor-default whitespace-nowrap">Olor a Culo 🥓</h1>
           
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <Select
-                value={selectedSeason?.id || ''}
-                onValueChange={(value) => {
-                  if (!value) {
-                    setSelectedSeason(null);
-                  } else {
-                    const season = safeSeasons.find(s => s.id === value);
-                    setSelectedSeason(season || null);
-                  }
-                }}
-              >
-                <SelectTrigger className="w-[180px] bg-zinc-800/80 border-zinc-700 text-zinc-200">
-                  <SelectValue placeholder="Todas las temporadas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Todas las temporadas</SelectItem>
-                  {safeSeasons.map(season => (
-                    <SelectItem key={season.id} value={season.id}>
-                      {formatSeasonName(season.name)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {editMode && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setShowCreateSeason(true)}
-                  title="Crear temporada"
-                >
-                  +
-                </Button>
-              )}
-            </div>
-            
-            <Input
-              type="text"
-              placeholder="Buscar anime..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-[180px] bg-zinc-800 border-zinc-700 text-zinc-200 placeholder:text-zinc-500"
-            />
-            
-            <Select
-              value={dayFilter || ''}
-              onValueChange={(value) => setDayFilter(value || null)}
-            >
-              <SelectTrigger className="w-[140px] bg-zinc-800 border-zinc-700 text-zinc-200">
-                <SelectValue placeholder="Todos los días" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Todos los días</SelectItem>
-                {DAYS.map(day => (
-                  <SelectItem key={day} value={day} className="capitalize">
-                    {day}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <button 
+            className="lg:hidden relative p-2 text-zinc-400 hover:text-zinc-200"
+            onClick={() => setFiltersExpanded(!filtersExpanded)}
+          >
+            <svg className={`w-5 h-5 transition-transform ${filtersExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+            {(searchQuery || dayFilter) && !filtersExpanded && (
+              <span className="absolute -top-1 -right-1 h-2 w-2 bg-indigo-500 rounded-full" />
+            )}
+          </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <AnimatePresence>
+          {(filtersExpanded || typeof window === 'undefined' || window.innerWidth >= 1024) && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-2 w-full lg:w-auto overflow-hidden"
+            >
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full lg:w-auto">
+                <Select
+                  value={selectedSeason?.id || ''}
+                  onValueChange={(value) => {
+                    if (!value) {
+                      setSelectedSeason(null);
+                    } else {
+                      const season = safeSeasons.find(s => s.id === value);
+                      setSelectedSeason(season || null);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-[180px] bg-zinc-800/80 border-zinc-700 text-zinc-200 text-sm">
+                    <SelectValue placeholder="Temporada" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todas las temporadas</SelectItem>
+                    {safeSeasons.map(season => (
+                      <SelectItem key={season.id} value={season.id}>
+                        {formatSeasonName(season.name)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {editMode && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setShowCreateSeason(true)}
+                    title="Crear temporada"
+                    className="w-full sm:w-auto"
+                  >
+                    +
+                  </Button>
+                )}
+                
+                <Input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full sm:w-[140px] lg:w-[180px] bg-zinc-800 border-zinc-700 text-zinc-200 placeholder:text-zinc-500 text-sm"
+                />
+                
+                <Select
+                  value={dayFilter || ''}
+                  onValueChange={(value) => setDayFilter(value || null)}
+                >
+                  <SelectTrigger className="w-full sm:w-[120px] lg:w-[140px] bg-zinc-800 border-zinc-700 text-zinc-200 text-sm">
+                    <SelectValue placeholder="Día" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos los días</SelectItem>
+                    {DAYS.map(day => (
+                      <SelectItem key={day} value={day} className="capitalize">
+                        {day}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
           {onRefreshJikan && (
             <Button
               variant="secondary"
               size="sm"
               onClick={handleRefreshClick}
               disabled={isRefreshing}
-              className="bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
+              className="bg-zinc-700 text-zinc-300 hover:bg-zinc-600 text-xs px-2 py-1 lg:text-sm"
             >
-              {isRefreshing ? '↻ Actualizando...' : '↻ Actualizar Jikan'}
+              <span className="hidden sm:inline">{isRefreshing ? '↻ Actualizando...' : '↻ Actualizar'}</span>
+              <span className="sm:hidden">{isRefreshing ? '↻' : '↻'}</span>
             </Button>
           )}
           {editMode && getPendingChangesCount() > 0 && onSaveAll && (
             <Button
               size="sm"
               onClick={onSaveAll}
-              className="bg-amber-600 text-white hover:bg-amber-500"
+              className="bg-amber-600 text-white hover:bg-amber-500 text-xs px-2 py-1 lg:text-sm"
             >
-              Guardar Todo ({getPendingChangesCount()})
+              <span className="hidden sm:inline">Guardar ({getPendingChangesCount()})</span>
+              <span className="sm:hidden">💾</span>
             </Button>
           )}
           <Button
             size="sm"
             onClick={handleEditModeToggle}
-            className={editMode 
+            className={`text-xs px-2 py-1 lg:text-sm ${editMode 
               ? 'bg-indigo-600 text-white hover:bg-indigo-500' 
               : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-            }
+            }`}
           >
-            {editMode ? 'Modo edición ON' : 'Editar'}
+            <span className="hidden sm:inline">{editMode ? 'Edición ON' : 'Editar'}</span>
+            <span className="sm:hidden">{editMode ? '✓' : '✎'}</span>
           </Button>
           
           <Button
             size="sm"
             onClick={onAddClick}
-            className="bg-indigo-600 text-white hover:bg-indigo-500"
+            className="bg-indigo-600 text-white hover:bg-indigo-500 text-xs px-2 py-1 lg:text-sm"
           >
-            + Agregar
+            <span className="hidden sm:inline">+ Agregar</span>
+            <span className="sm:hidden">+</span>
           </Button>
         </div>
       </header>

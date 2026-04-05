@@ -24,15 +24,15 @@ export function AnimeModal({ anime }: AnimeModalProps) {
 
   return (
     <Dialog open={modalOpen} onOpenChange={(open) => !open && closeModal()}>
-      <DialogContent className="bg-[#18181b] border-zinc-800 max-w-2xl max-h-[90vh] p-0">
+      <DialogContent className="bg-[#18181b] border-zinc-800 w-[90vw] max-w-2xl max-h-[90vh] p-0 [&_[data-slot=dialog-content]]:max-w-2xl">
         <ScrollArea className="max-h-[90vh]">
-          <div className="p-6">
-            <div className="flex gap-4">
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               {anime.imageUrl && (
                 <motion.img
                   src={anime.imageUrl}
                   alt={anime.title}
-                  className="h-48 w-36 rounded-lg object-cover"
+                  className="h-32 sm:h-48 w-auto sm:w-36 rounded-lg object-cover self-center sm:self-start"
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2, duration: 0.3 }}
@@ -41,19 +41,19 @@ export function AnimeModal({ anime }: AnimeModalProps) {
               
               <div className="flex-1">
                 <motion.div 
-                  className="flex items-start justify-between"
+                  className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-2"
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.1, duration: 0.4 }}
                 >
                   <div>
-                    <h2 className="text-xl font-semibold text-zinc-100">{anime.title}</h2>
+                    <h2 className="text-lg sm:text-xl font-semibold text-zinc-100">{anime.title}</h2>
                     <p className="text-sm text-zinc-500 capitalize">{anime.day} · {anime.episodes} episodes</p>
                   </div>
                 </motion.div>
 
                 <motion.div 
-                  className="mt-6 space-y-6"
+                  className="mt-4 sm:mt-6 space-y-4 sm:space-y-6"
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2, duration: 0.4 }}
@@ -61,14 +61,14 @@ export function AnimeModal({ anime }: AnimeModalProps) {
                   {(['eze', 'pancho'] as User[]).map((user, index) => (
                     <motion.div 
                       key={user} 
-                      className="border-t border-zinc-800 pt-4"
+                      className="border-t border-zinc-800 pt-3 sm:pt-4"
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.3 + index * 0.1, duration: 0.4 }}
                     >
                       <h3 className="text-sm font-medium text-zinc-400 uppercase mb-2">{user}</h3>
                       
-                      <div className="flex items-center gap-4">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                         <motion.span 
                           className="h-3 w-3 rounded-full"
                           style={{ backgroundColor: getStatusColor(anime.users[user].status) }}
@@ -77,7 +77,7 @@ export function AnimeModal({ anime }: AnimeModalProps) {
                           transition={{ delay: 0.4 + index * 0.1, type: 'spring' as const }}
                         />
                         <span className="text-zinc-200">{STATUS_LABELS[anime.users[user].status]}</span>
-                        <span className="text-zinc-500">
+                        <span className="text-zinc-500 text-sm">
                           {anime.users[user].episodesWatched.length}/{anime.episodes} episodes
                         </span>
                       </div>
@@ -89,7 +89,7 @@ export function AnimeModal({ anime }: AnimeModalProps) {
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.5 }}
                         >
-                          <p className="text-sm text-zinc-400 italic">"{anime.users[user].opinion}"</p>
+                          <p className="text-sm text-zinc-400 italic">&quot;{anime.users[user].opinion}&quot;</p>
                         </motion.div>
                       )}
                     </motion.div>

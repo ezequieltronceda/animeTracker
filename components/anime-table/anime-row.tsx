@@ -78,32 +78,32 @@ export function AnimeRow({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: animationDelay / 1000 }}
       >
-        <td className="p-4 text-zinc-500 font-mono text-sm">{String(anime.order).padStart(2, '0')}</td>
-        <td className="p-4">
-          <div className="flex items-center gap-4">
+        <td className="p-2 lg:p-4 text-zinc-500 font-mono text-xs lg:text-sm">{String(anime.order).padStart(2, '0')}</td>
+        <td className="p-2 lg:p-4">
+          <div className="flex items-center gap-2 lg:gap-4">
             {anime.imageUrl && (
               <img 
                 src={anime.imageUrl} 
                 alt={anime.title}
-                className="h-20 w-14 rounded-lg object-cover shadow-lg transition-transform duration-300 group-hover:scale-110"
+                className="h-12 lg:h-20 w-8 lg:w-14 rounded-lg object-cover shadow-lg transition-transform duration-300 group-hover:scale-110"
               />
             )}
-            <div className="flex flex-col gap-1">
-              <span className="font-medium text-zinc-200 text-base leading-tight">{anime.title}</span>
-              <span className="text-sm text-amber-400 flex items-center gap-1">
+            <div className="flex flex-col gap-0 lg:gap-1">
+              <span className="font-medium text-zinc-200 text-sm lg:text-base leading-tight line-clamp-2">{anime.title}</span>
+              <span className="text-xs lg:text-sm text-amber-400 flex items-center gap-1">
                 <span className="text-amber-500">★</span>
                 {anime.score ? anime.score.toFixed(1) : '-'}
               </span>
             </div>
           </div>
         </td>
-        <td className="p-4">
+        <td className="p-2 lg:p-4">
           {editMode ? (
             <Select
               value={anime.day || ''}
               onValueChange={(value) => onDayChange(value || '')}
             >
-              <SelectTrigger className="h-7 text-xs bg-zinc-800 border-zinc-700 text-zinc-300 w-[80px]">
+              <SelectTrigger className="h-6 lg:h-7 text-xs bg-zinc-800 border-zinc-700 text-zinc-300 w-[70px] lg:w-[80px]">
                 <SelectValue placeholder="-" />
               </SelectTrigger>
               <SelectContent>
@@ -117,18 +117,18 @@ export function AnimeRow({
               </SelectContent>
             </Select>
           ) : (
-            <span className="text-zinc-400 capitalize">
-              {anime.day === 'undefined' ? 'Aún no definido' : (DAYS.includes(anime.day as any) ? anime.day : '-')}
+            <span className="text-zinc-400 capitalize text-xs lg:text-sm">
+              {anime.day === 'undefined' ? 'Aún no definido' : (DAYS.includes(anime.day as typeof DAYS[number]) ? anime.day : '-')}
             </span>
           )}
         </td>
-        <td className="p-4">
+        <td className="p-2 lg:p-4">
           {editMode ? (
             <Select
               value={getLocalStatus('eze')}
               onValueChange={(value) => onStatusChange('eze', value as UserStatus)}
             >
-              <SelectTrigger className="h-7 text-xs bg-zinc-800 border-zinc-700 text-zinc-300 w-[100px]">
+              <SelectTrigger className="h-6 lg:h-7 text-xs bg-zinc-800 border-zinc-700 text-zinc-300 w-[80px] lg:w-[100px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -145,13 +145,13 @@ export function AnimeRow({
             />
           )}
         </td>
-        <td className="p-4">
+        <td className="p-2 lg:p-4">
           {editMode ? (
             <Select
               value={getLocalStatus('pancho')}
               onValueChange={(value) => onStatusChange('pancho', value as UserStatus)}
             >
-              <SelectTrigger className="h-7 text-xs bg-zinc-800 border-zinc-700 text-zinc-300 w-[100px]">
+              <SelectTrigger className="h-6 lg:h-7 text-xs bg-zinc-800 border-zinc-700 text-zinc-300 w-[80px] lg:w-[100px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -168,9 +168,9 @@ export function AnimeRow({
             />
           )}
         </td>
-        <td className="p-2 text-zinc-400">{anime.episodes || '?'}</td>
+        <td className="p-2 lg:p-2 text-zinc-400 text-xs lg:text-sm">{anime.episodes || '?'}</td>
         {editMode && (
-          <td className="p-4">
+          <td className="p-2 lg:p-4">
             {showMaxInput ? (
               <MaxEpisodeInput
                 value={maxInputValue}
@@ -191,9 +191,10 @@ export function AnimeRow({
                   setMaxInputValue(String(getDisplayMax('eze')));
                   setShowMaxInput(true);
                 }}
-                className="rounded bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300 hover:bg-zinc-600"
+                className="rounded bg-zinc-700 px-1 lg:px-2 py-0.5 text-xs text-zinc-300 hover:bg-zinc-600"
               >
-                Máx ({getDisplayMax('eze')})
+                <span className="hidden sm:inline">Máx ({getDisplayMax('eze')})</span>
+                <span className="sm:hidden">M</span>
               </button>
             )}
             <div className="flex items-center gap-1 mt-1">
@@ -203,9 +204,10 @@ export function AnimeRow({
                     e.stopPropagation();
                     onSave();
                   }}
-                  className="text-xs bg-indigo-600 text-white px-2 py-1 rounded hover:bg-indigo-500"
+                  className="text-xs bg-indigo-600 text-white px-1 lg:px-2 py-1 rounded hover:bg-indigo-500"
                 >
-                  Guardar
+                  <span className="hidden sm:inline">Guardar</span>
+                  <span className="sm:inline">✓</span>
                 </button>
               )}
               <button
@@ -231,39 +233,39 @@ export function AnimeRow({
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
           >
-          <td colSpan={editMode ? 7 : 6} className="p-4">
+          <td colSpan={editMode ? 7 : 6} className="p-2 lg:p-4">
             <motion.div 
-              className="flex gap-6"
+              className="flex flex-col lg:flex-row gap-3 lg:gap-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2 }}
             >
               {anime.imageUrl && (
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 flex justify-center lg:justify-start">
                   <motion.img 
                     src={anime.imageUrl} 
                     alt={anime.title}
-                    className="h-64 w-auto rounded-xl object-cover shadow-2xl"
+                    className="h-40 lg:h-64 w-auto max-w-[200px] lg:max-w-none rounded-xl object-cover shadow-2xl"
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.1, duration: 0.3 }}
                   />
                 </div>
               )}
-              <div className="flex-1 flex flex-col gap-4">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-xl font-bold text-zinc-100">{anime.title}</h3>
+              <div className="flex-1 flex flex-col gap-2 lg:gap-4">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2">
+                  <h3 className="text-base lg:text-xl font-bold text-zinc-100">{anime.title}</h3>
                   {anime.score && (
-                    <span className="text-lg text-amber-400 flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-lg">
+                    <span className="text-sm lg:text-lg text-amber-400 flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-lg">
                       <span className="text-amber-500">★</span>
                       {anime.score.toFixed(1)}
                     </span>
                   )}
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
                   {users.map((user) => (
-                    <div key={user} className="bg-zinc-800/50 rounded-lg p-3">
+                    <div key={user} className="bg-zinc-800/50 rounded-lg p-2 lg:p-3">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-sm font-medium text-zinc-300 uppercase">{user}</span>
                         {editMode ? (
@@ -271,7 +273,7 @@ export function AnimeRow({
                             value={getLocalStatus(user)}
                             onValueChange={(value) => onStatusChange(user, value as UserStatus)}
                           >
-                            <SelectTrigger className="h-6 text-xs bg-zinc-700 border-zinc-600 text-zinc-300 w-[90px]">
+                            <SelectTrigger className="h-6 text-xs bg-zinc-700 border-zinc-600 text-zinc-300 w-[80px] lg:w-[90px]">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -300,7 +302,7 @@ export function AnimeRow({
                               key={episode}
                               onClick={() => onEpisodeClick(user, episode)}
                               disabled={!editMode}
-                              className={`h-6 w-6 text-xs rounded-md transition-all hover:scale-110 ${
+                              className={`h-5 w-5 lg:h-6 lg:w-6 text-xs rounded-md transition-all hover:scale-110 ${
                                 isWatched 
                                   ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg' 
                                   : editMode

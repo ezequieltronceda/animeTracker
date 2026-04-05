@@ -57,9 +57,10 @@ export async function GET(request: Request) {
     }));
 
     return NextResponse.json({ seasons, animes });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -128,9 +129,10 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -143,7 +145,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'ID and seasonId are required' }, { status: 400 });
     }
 
-    const updateData: Record<string, any> = {};
+          const updateData: Record<string, unknown> = {};
 
     if (maxEpisodes !== undefined) {
       updateData.maxEpisodes = maxEpisodes;
@@ -166,9 +168,10 @@ export async function PUT(request: Request) {
     await updateDoc(animeRef, updateData);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error updating anime:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -186,9 +189,10 @@ export async function DELETE(request: Request) {
     await deleteDoc(animeRef);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error deleting anime:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -233,7 +237,7 @@ export async function PATCH(request: Request) {
             continue;
           }
 
-          const updateData: Record<string, any> = {};
+    const updateData: Record<string, unknown> = {};
           
           if (animeData.score) {
             updateData.score = animeData.score;
@@ -271,8 +275,9 @@ export async function PATCH(request: Request) {
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error in PATCH:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

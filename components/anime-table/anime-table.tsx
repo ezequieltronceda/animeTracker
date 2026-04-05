@@ -209,17 +209,17 @@ export function AnimeTable({ animes, onSaveChanges, onDeleteAnime }: AnimeTableP
 
   return (
     <div className="w-full">
-      <div className="w-full overflow-auto">
-        <table className="w-full border-collapse text-base">
+      <div className="w-full overflow-x-auto">
+        <table className="w-full min-w-[600px] lg:min-w-0 border-collapse text-base">
           <thead className="sticky top-0 z-10 bg-[#18181b]">
             <tr>
-              <th className="w-16 p-3 text-left text-sm font-medium text-zinc-500">#</th>
-              <th className="p-3 text-left text-sm font-medium text-zinc-500">Anime</th>
-              <th className="w-32 p-3 text-left text-sm font-medium text-zinc-500">Día</th>
-              <th className="w-48 p-3 text-left text-sm font-medium text-zinc-500">Eze</th>
-              <th className="w-48 p-3 text-left text-sm font-medium text-zinc-500">Pancho</th>
-              <th className="w-24 p-3 text-left text-sm font-medium text-zinc-500">Eps</th>
-              {editMode && <th className="w-28 p-3 text-left text-sm font-medium text-zinc-500"></th>}
+              <th className="w-12 lg:w-16 p-2 lg:p-3 text-left text-xs lg:text-sm font-medium text-zinc-500">#</th>
+              <th className="p-2 lg:p-3 text-left text-xs lg:text-sm font-medium text-zinc-500">Anime</th>
+              <th className="w-24 lg:w-32 p-2 lg:p-3 text-left text-xs lg:text-sm font-medium text-zinc-500">Día</th>
+              <th className="w-36 lg:w-48 p-2 lg:p-3 text-left text-xs lg:text-sm font-medium text-zinc-500">Eze</th>
+              <th className="w-36 lg:w-48 p-2 lg:p-3 text-left text-xs lg:text-sm font-medium text-zinc-500">Pancho</th>
+              <th className="w-16 lg:w-24 p-2 lg:p-3 text-left text-xs lg:text-sm font-medium text-zinc-500">Eps</th>
+              {editMode && <th className="w-20 lg:w-28 p-2 lg:p-3 text-left text-xs lg:text-sm font-medium text-zinc-500"></th>}
             </tr>
           </thead>
           <tbody>
@@ -249,7 +249,7 @@ export function AnimeTable({ animes, onSaveChanges, onDeleteAnime }: AnimeTableP
         </table>
         
         {filteredAnimes.length === 0 && (
-          <div className="p-8 text-center text-zinc-500">
+          <div className="p-4 lg:p-8 text-center text-zinc-500 text-sm lg:text-base">
             No hay animes para mostrar
           </div>
         )}

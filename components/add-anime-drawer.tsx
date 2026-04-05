@@ -43,7 +43,7 @@ export function AddAnimeDrawer({ open, onClose, onAdd, seasonId }: AddAnimeDrawe
       const checkRes = await fetch(`/api/anime?season=${seasonId}`);
       const checkData = await checkRes.json();
       
-      if (checkData.animes?.some((a: any) => a.malId === parseInt(malId))) {
+      if (checkData.animes?.some((a: { malId: number }) => a.malId === parseInt(malId))) {
         setError('Este anime ya está agregado en esta temporada');
         setLoading(false);
         return;
@@ -84,9 +84,9 @@ export function AddAnimeDrawer({ open, onClose, onAdd, seasonId }: AddAnimeDrawe
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="bg-[#18181b] border-zinc-800 sm:max-w-[425px]">
+      <DialogContent className="bg-[#18181b] border-zinc-800 w-[90vw] max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-zinc-100">Agregar Anime</DialogTitle>
+          <DialogTitle className="text-zinc-100 text-lg">Agregar Anime</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <motion.div
@@ -94,7 +94,7 @@ export function AddAnimeDrawer({ open, onClose, onAdd, seasonId }: AddAnimeDrawe
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <Label htmlFor="malId" className="text-zinc-400">MAL ID</Label>
+            <Label htmlFor="malId" className="text-zinc-400 text-sm">MAL ID</Label>
             <Input
               id="malId"
               type="number"
@@ -111,7 +111,7 @@ export function AddAnimeDrawer({ open, onClose, onAdd, seasonId }: AddAnimeDrawe
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Label htmlFor="day" className="text-zinc-400">Día de emisión</Label>
+            <Label htmlFor="day" className="text-zinc-400 text-sm">Día de emisión</Label>
             <Select value={day} onValueChange={(value) => setDay(value || '')}>
               <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-200 mt-1">
                 <SelectValue placeholder="Seleccionar día" />
@@ -137,18 +137,19 @@ export function AddAnimeDrawer({ open, onClose, onAdd, seasonId }: AddAnimeDrawe
             </motion.p>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               type="button"
               variant="ghost"
               onClick={() => handleOpenChange(false)}
+              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
             <motion.button
               type="submit"
               disabled={loading}
-              className="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500 disabled:opacity-50"
+              className="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500 disabled:opacity-50 w-full sm:w-auto"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
