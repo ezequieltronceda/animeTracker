@@ -1,62 +1,45 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface ConfirmModalProps {
+  open: boolean;
   title: string;
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-export function ConfirmModal({ title, message, onConfirm, onCancel }: ConfirmModalProps) {
+export function ConfirmModal({ open, title, message, onConfirm, onCancel }: ConfirmModalProps) {
   return (
-    <AnimatePresence>
-      <motion.div 
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onCancel}
-      >
-        <motion.div 
-          className="w-full max-w-sm rounded-lg bg-[#18181b] p-6 shadow-xl"
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <motion.h2 
-            className="text-lg font-semibold text-zinc-100 mb-2"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            {title}
-          </motion.h2>
-          <motion.p 
-            className="text-sm text-zinc-400 mb-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
+      <DialogContent className="bg-[#18181b] border-zinc-800 sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="text-zinc-100">{title}</DialogTitle>
+          <DialogDescription className="text-zinc-400">
             {message}
-          </motion.p>
-          
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
           <motion.div 
             className="flex justify-end gap-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <button
-              onClick={onCancel}
-              className="rounded px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200"
-            >
+            <Button variant="ghost" onClick={onCancel}>
               Cancelar
-            </button>
+            </Button>
             <motion.button
               onClick={onConfirm}
               className="rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-500"
@@ -66,9 +49,9 @@ export function ConfirmModal({ title, message, onConfirm, onCancel }: ConfirmMod
               Eliminar
             </motion.button>
           </motion.div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

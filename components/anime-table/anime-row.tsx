@@ -7,6 +7,13 @@ import { UserSubrow } from './user-subrow';
 import { MaxEpisodeInput } from './max-episode-input';
 import type { Anime, User, UserStatus } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface AnimeRowProps {
   anime: Anime;
@@ -71,57 +78,65 @@ export function AnimeRow({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: animationDelay / 1000 }}
       >
-        <td className="p-3 text-zinc-500 font-mono text-xs">{String(anime.order).padStart(2, '0')}</td>
-        <td className="p-3">
-          <div className="flex items-center gap-3">
+        <td className="p-4 text-zinc-500 font-mono text-sm">{String(anime.order).padStart(2, '0')}</td>
+        <td className="p-4">
+          <div className="flex items-center gap-4">
             {anime.imageUrl && (
               <img 
                 src={anime.imageUrl} 
                 alt={anime.title}
-                className="h-14 w-10 rounded-lg object-cover shadow-lg transition-transform duration-300 group-hover:scale-110"
+                className="h-20 w-14 rounded-lg object-cover shadow-lg transition-transform duration-300 group-hover:scale-110"
               />
             )}
             <div className="flex flex-col gap-1">
-              <span className="font-medium text-zinc-200 text-sm leading-tight">{anime.title}</span>
-              <span className="text-xs text-amber-400 flex items-center gap-1">
+              <span className="font-medium text-zinc-200 text-base leading-tight">{anime.title}</span>
+              <span className="text-sm text-amber-400 flex items-center gap-1">
                 <span className="text-amber-500">★</span>
                 {anime.score ? anime.score.toFixed(1) : '-'}
               </span>
             </div>
           </div>
         </td>
-        <td className="p-2">
+        <td className="p-4">
           {editMode ? (
-            <select
+            <Select
               value={anime.day || ''}
-              onChange={(e) => onDayChange(e.target.value)}
-              className="rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-300 border border-zinc-700"
-              onClick={(e) => e.stopPropagation()}
+              onValueChange={(value) => onDayChange(value || '')}
             >
-              <option value="">-</option>
-              <option value="undefined">Aún no definido</option>
-              {DAYS.map(d => (
-                <option key={d} value={d} className="capitalize">{d}</option>
-              ))}
-            </select>
+              <SelectTrigger className="h-7 text-xs bg-zinc-800 border-zinc-700 text-zinc-300 w-[80px]">
+                <SelectValue placeholder="-" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">-</SelectItem>
+                <SelectItem value="undefined">Aún no definido</SelectItem>
+                {DAYS.map(d => (
+                  <SelectItem key={d} value={d} className="capitalize">
+                    {d}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ) : (
             <span className="text-zinc-400 capitalize">
               {anime.day === 'undefined' ? 'Aún no definido' : (DAYS.includes(anime.day as any) ? anime.day : '-')}
             </span>
           )}
         </td>
-        <td className="p-2">
+        <td className="p-4">
           {editMode ? (
-            <select
+            <Select
               value={getLocalStatus('eze')}
-              onChange={(e) => onStatusChange('eze', e.target.value as UserStatus)}
-              className="rounded px-2 py-1 text-xs bg-zinc-800 text-zinc-300 border border-zinc-700"
-              onClick={(e) => e.stopPropagation()}
+              onValueChange={(value) => onStatusChange('eze', value as UserStatus)}
             >
-              {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
+              <SelectTrigger className="h-7 text-xs bg-zinc-800 border-zinc-700 text-zinc-300 w-[100px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ) : (
             <StatusBadge 
               status={anime.users.eze.status} 
@@ -130,18 +145,21 @@ export function AnimeRow({
             />
           )}
         </td>
-        <td className="p-2">
+        <td className="p-4">
           {editMode ? (
-            <select
+            <Select
               value={getLocalStatus('pancho')}
-              onChange={(e) => onStatusChange('pancho', e.target.value as UserStatus)}
-              className="rounded px-2 py-1 text-xs bg-zinc-800 text-zinc-300 border border-zinc-700"
-              onClick={(e) => e.stopPropagation()}
+              onValueChange={(value) => onStatusChange('pancho', value as UserStatus)}
             >
-              {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
+              <SelectTrigger className="h-7 text-xs bg-zinc-800 border-zinc-700 text-zinc-300 w-[100px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ) : (
             <StatusBadge 
               status={anime.users.pancho.status} 
@@ -152,7 +170,7 @@ export function AnimeRow({
         </td>
         <td className="p-2 text-zinc-400">{anime.episodes || '?'}</td>
         {editMode && (
-          <td className="p-2">
+          <td className="p-4">
             {showMaxInput ? (
               <MaxEpisodeInput
                 value={maxInputValue}
@@ -249,16 +267,19 @@ export function AnimeRow({
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-sm font-medium text-zinc-300 uppercase">{user}</span>
                         {editMode ? (
-                          <select
+                          <Select
                             value={getLocalStatus(user)}
-                            onChange={(e) => onStatusChange(user, e.target.value as UserStatus)}
-                            className="rounded px-2 py-0.5 text-xs bg-zinc-700 text-zinc-300 border border-zinc-600"
-                            onClick={(e) => e.stopPropagation()}
+                            onValueChange={(value) => onStatusChange(user, value as UserStatus)}
                           >
-                            {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                              <option key={value} value={value}>{label}</option>
-                            ))}
-                          </select>
+                            <SelectTrigger className="h-6 text-xs bg-zinc-700 border-zinc-600 text-zinc-300 w-[90px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                                <SelectItem key={value} value={value} className="text-xs">{label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         ) : (
                           <span 
                             className="h-2 w-2 rounded-full"

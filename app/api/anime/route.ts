@@ -86,8 +86,8 @@ export async function POST(request: Request) {
     }
 
     if (action === 'createAnime') {
-      if (!malId || !day || !seasonId) {
-        return NextResponse.json({ error: 'MAL ID, day, and season are required' }, { status: 400 });
+      if (!malId || !seasonId) {
+        return NextResponse.json({ error: 'MAL ID and season are required' }, { status: 400 });
       }
 
       const jikanResponse = await fetch(`https://api.jikan.moe/v4/anime/${malId}`);

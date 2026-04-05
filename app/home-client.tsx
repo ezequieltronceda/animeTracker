@@ -10,24 +10,25 @@ import { ConfirmModal } from '@/components/confirm-modal';
 import { sortSeasonsByDate } from '@/lib/constants';
 import type { Anime, Season, User, UserStatus } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function SkeletonRow() {
   return (
     <tr className="border-b border-zinc-800/50">
-      <td className="p-3"><div className="h-4 w-6 bg-zinc-800 rounded animate-pulse" /></td>
-      <td className="p-3">
-        <div className="flex items-center gap-3">
-          <div className="h-14 w-10 bg-zinc-800 rounded-lg animate-pulse" />
+      <td className="p-4"><Skeleton className="h-5 w-8" /></td>
+      <td className="p-4">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-20 w-14 rounded-lg" />
           <div className="space-y-2">
-            <div className="h-4 w-32 bg-zinc-800 rounded animate-pulse" />
-            <div className="h-3 w-16 bg-zinc-800 rounded animate-pulse" />
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-20" />
           </div>
         </div>
       </td>
-      <td className="p-2"><div className="h-6 w-16 bg-zinc-800 rounded animate-pulse" /></td>
-      <td className="p-2"><div className="h-8 w-28 bg-zinc-800 rounded animate-pulse" /></td>
-      <td className="p-2"><div className="h-8 w-28 bg-zinc-800 rounded animate-pulse" /></td>
-      <td className="p-2"><div className="h-4 w-8 bg-zinc-800 rounded animate-pulse" /></td>
+      <td className="p-4"><Skeleton className="h-7 w-20" /></td>
+      <td className="p-4"><Skeleton className="h-9 w-36" /></td>
+      <td className="p-4"><Skeleton className="h-9 w-36" /></td>
+      <td className="p-4"><Skeleton className="h-5 w-10" /></td>
     </tr>
   );
 }
@@ -36,15 +37,15 @@ function SkeletonTable() {
   return (
     <div className="w-full">
       <div className="w-full overflow-auto">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full border-collapse text-base">
           <thead className="sticky top-0 z-10 bg-[#18181b]">
             <tr>
-              <th className="w-12 p-2 text-left text-xs font-medium text-zinc-500">#</th>
-              <th className="p-2 text-left text-xs font-medium text-zinc-500">Anime</th>
-              <th className="w-28 p-2 text-left text-xs font-medium text-zinc-500">Día</th>
-              <th className="w-40 p-2 text-left text-xs font-medium text-zinc-500">Eze</th>
-              <th className="w-40 p-2 text-left text-xs font-medium text-zinc-500">Pancho</th>
-              <th className="w-20 p-2 text-left text-xs font-medium text-zinc-500">Eps</th>
+              <th className="w-16 p-3 text-left text-sm font-medium text-zinc-500">#</th>
+              <th className="p-3 text-left text-sm font-medium text-zinc-500">Anime</th>
+              <th className="w-32 p-3 text-left text-sm font-medium text-zinc-500">Día</th>
+              <th className="w-48 p-3 text-left text-sm font-medium text-zinc-500">Eze</th>
+              <th className="w-48 p-3 text-left text-sm font-medium text-zinc-500">Pancho</th>
+              <th className="w-24 p-3 text-left text-sm font-medium text-zinc-500">Eps</th>
             </tr>
           </thead>
           <tbody>
@@ -320,6 +321,7 @@ export default function HomeClient() {
 
       {drawerOpen && selectedSeason && (
         <AddAnimeDrawer 
+          open={drawerOpen}
           onClose={closeDrawer} 
           onAdd={handleAddAnime} 
           seasonId={selectedSeason.id} 
@@ -329,6 +331,7 @@ export default function HomeClient() {
       
       {deleteConfirm.show && deleteConfirm.anime && (
         <ConfirmModal
+          open={deleteConfirm.show}
           title="Eliminar anime"
           message={`¿Estás seguro de que quieres eliminar "${deleteConfirm.anime.title}"? Esta acción no se puede deshacer.`}
           onConfirm={confirmDelete}

@@ -61,7 +61,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   setEditMode: (enabled: boolean, password?: string) => {
     if (enabled) {
       if (password === EDIT_PASSWORD) {
-        const expiry = Date.now() + (3 * 30 * 24 * 60 * 60 * 1000);
+        const expiry = Date.now() + (60 * 60 * 1000);
         set({ editMode: true, editModeExpiry: expiry, editPasswordError: null });
         localStorage.setItem('editModeExpiry', expiry.toString());
         return true;

@@ -210,16 +210,16 @@ export function AnimeTable({ animes, onSaveChanges, onDeleteAnime }: AnimeTableP
   return (
     <div className="w-full">
       <div className="w-full overflow-auto">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full border-collapse text-base">
           <thead className="sticky top-0 z-10 bg-[#18181b]">
             <tr>
-              <th className="w-12 p-2 text-left text-xs font-medium text-zinc-500">#</th>
-              <th className="p-2 text-left text-xs font-medium text-zinc-500">Anime</th>
-              <th className="w-28 p-2 text-left text-xs font-medium text-zinc-500">Día</th>
-              <th className="w-40 p-2 text-left text-xs font-medium text-zinc-500">Eze</th>
-              <th className="w-40 p-2 text-left text-xs font-medium text-zinc-500">Pancho</th>
-              <th className="w-20 p-2 text-left text-xs font-medium text-zinc-500">Eps</th>
-              {editMode && <th className="w-24 p-2 text-left text-xs font-medium text-zinc-500"></th>}
+              <th className="w-16 p-3 text-left text-sm font-medium text-zinc-500">#</th>
+              <th className="p-3 text-left text-sm font-medium text-zinc-500">Anime</th>
+              <th className="w-32 p-3 text-left text-sm font-medium text-zinc-500">Día</th>
+              <th className="w-48 p-3 text-left text-sm font-medium text-zinc-500">Eze</th>
+              <th className="w-48 p-3 text-left text-sm font-medium text-zinc-500">Pancho</th>
+              <th className="w-24 p-3 text-left text-sm font-medium text-zinc-500">Eps</th>
+              {editMode && <th className="w-28 p-3 text-left text-sm font-medium text-zinc-500"></th>}
             </tr>
           </thead>
           <tbody>

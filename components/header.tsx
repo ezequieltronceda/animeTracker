@@ -5,6 +5,22 @@ import { useUIStore } from '@/store/ui-store';
 import { DAYS, formatSeasonName } from '@/lib/constants';
 import type { Season } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 interface HeaderProps {
   onAddClick: () => void;
@@ -114,104 +130,118 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll, onRefre
           
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
-              <select
+              <Select
                 value={selectedSeason?.id || ''}
-                onChange={handleSeasonChange}
-                className="rounded bg-zinc-800/80 px-3 py-1.5 text-sm text-zinc-200 border border-zinc-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                onValueChange={(value) => {
+                  if (!value) {
+                    setSelectedSeason(null);
+                  } else {
+                    const season = safeSeasons.find(s => s.id === value);
+                    setSelectedSeason(season || null);
+                  }
+                }}
               >
-                <option value="">Todas las temporadas</option>
-                {safeSeasons.map(season => (
-                  <option key={season.id} value={season.id}>{formatSeasonName(season.name)}</option>
-                ))}
-              </select>
+                <SelectTrigger className="w-[180px] bg-zinc-800/80 border-zinc-700 text-zinc-200">
+                  <SelectValue placeholder="Todas las temporadas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas las temporadas</SelectItem>
+                  {safeSeasons.map(season => (
+                    <SelectItem key={season.id} value={season.id}>
+                      {formatSeasonName(season.name)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {editMode && (
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setShowCreateSeason(true)}
-                  className="rounded bg-zinc-700/80 px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-600 hover-lift"
                   title="Crear temporada"
                 >
                   +
-                </button>
+                </Button>
               )}
             </div>
             
-            <input
+            <Input
               type="text"
               placeholder="Buscar anime..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 placeholder-zinc-500 border border-zinc-700 focus:outline-none focus:border-indigo-500"
+              className="w-[180px] bg-zinc-800 border-zinc-700 text-zinc-200 placeholder:text-zinc-500"
             />
             
-            <select
+            <Select
               value={dayFilter || ''}
-              onChange={(e) => setDayFilter(e.target.value || null)}
-              className="rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 border border-zinc-700 focus:outline-none focus:border-indigo-500"
+              onValueChange={(value) => setDayFilter(value || null)}
             >
-              <option value="">Todos los días</option>
-              {DAYS.map(day => (
-                <option key={day} value={day} className="capitalize">{day}</option>
-              ))}
-            </select>
+              <SelectTrigger className="w-[140px] bg-zinc-800 border-zinc-700 text-zinc-200">
+                <SelectValue placeholder="Todos los días" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todos los días</SelectItem>
+                {DAYS.map(day => (
+                  <SelectItem key={day} value={day} className="capitalize">
+                    {day}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {onRefreshJikan && (
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={handleRefreshClick}
               disabled={isRefreshing}
-              className="rounded bg-zinc-700 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover-lift"
+              className="bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
             >
               {isRefreshing ? '↻ Actualizando...' : '↻ Actualizar Jikan'}
-            </button>
+            </Button>
           )}
           {editMode && getPendingChangesCount() > 0 && onSaveAll && (
-            <button
+            <Button
+              size="sm"
               onClick={onSaveAll}
-              className="rounded bg-amber-600 px-3 py-1.5 text-sm text-white hover:bg-amber-500 hover-lift animate-pulse-glow"
+              className="bg-amber-600 text-white hover:bg-amber-500"
             >
               Guardar Todo ({getPendingChangesCount()})
-            </button>
+            </Button>
           )}
-          <button
+          <Button
+            size="sm"
             onClick={handleEditModeToggle}
-            className={`rounded px-3 py-1.5 text-sm transition-all hover-lift ${
-              editMode 
-                ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-600/30' 
-                : 'bg-zinc-800/80 text-zinc-400 hover:bg-zinc-700'
-            }`}
+            className={editMode 
+              ? 'bg-indigo-600 text-white hover:bg-indigo-500' 
+              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+            }
           >
             {editMode ? 'Modo edición ON' : 'Editar'}
-          </button>
+          </Button>
           
-          <button
+          <Button
+            size="sm"
             onClick={onAddClick}
-            className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-500 hover-lift shadow-lg shadow-indigo-600/30 transition-all"
+            className="bg-indigo-600 text-white hover:bg-indigo-500"
           >
             + Agregar
-          </button>
+          </Button>
         </div>
       </header>
 
       <AnimatePresence>
         {showPasswordModal && (
-          <motion.div 
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div 
-              className="w-full max-w-sm rounded-lg bg-[#18181b] p-6 shadow-xl"
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            >
-              <h2 className="text-lg font-semibold text-zinc-100 mb-4">Ingresar clave de edición</h2>
-              
-              <input
+          <Dialog open={showPasswordModal} onOpenChange={(open) => !open && setShowPasswordModal(false)}>
+            <DialogContent className="bg-[#18181b] border-zinc-800">
+              <DialogHeader>
+                <DialogTitle className="text-zinc-100">Ingresar clave de edición</DialogTitle>
+              </DialogHeader>
+              <Input
                 type="password"
                 value={passwordInput}
                 onChange={(e) => {
@@ -219,99 +249,66 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll, onRefre
                   if (editPasswordError) clearEditPasswordError();
                 }}
                 placeholder="Clave"
-                className="w-full rounded bg-zinc-800 px-3 py-2 text-zinc-200 border border-zinc-700 focus:outline-none focus:border-indigo-500 mb-2"
+                className="bg-zinc-800 border-zinc-700 text-zinc-200"
                 onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
               />
-              
               {editPasswordError && (
-                <p className="text-sm text-red-500 mb-4">{editPasswordError}</p>
+                <p className="text-sm text-red-500">{editPasswordError}</p>
               )}
-              
-              <div className="flex justify-end gap-2">
-                <button
+              <DialogFooter>
+                <Button
+                  variant="ghost"
                   onClick={() => {
                     setShowPasswordModal(false);
                     setPasswordInput('');
                     clearEditPasswordError();
                   }}
-                  className="rounded px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200"
                 >
                   Cancelar
-                </button>
-                <button
-                  onClick={handlePasswordSubmit}
-                  className="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500"
-                >
-                  Aceptar
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
+                </Button>
+                <Button onClick={handlePasswordSubmit}>Aceptar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         )}
 
         {showCreateSeason && (
-          <motion.div 
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div 
-              className="w-full max-w-sm rounded-lg bg-[#18181b] p-6 shadow-xl"
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            >
-              <h2 className="text-lg font-semibold text-zinc-100 mb-4">Crear Temporada</h2>
-              
-              <input
+          <Dialog open={showCreateSeason} onOpenChange={(open) => !open && setShowCreateSeason(false)}>
+            <DialogContent className="bg-[#18181b] border-zinc-800">
+              <DialogHeader>
+                <DialogTitle className="text-zinc-100">Crear Temporada</DialogTitle>
+              </DialogHeader>
+              <Input
                 type="text"
                 value={newSeasonName}
                 onChange={(e) => setNewSeasonName(e.target.value)}
                 placeholder="Ej: Invierno 2026"
-                className="w-full rounded bg-zinc-800 px-3 py-2 text-zinc-200 border border-zinc-700 focus:outline-none focus:border-indigo-500 mb-4"
+                className="bg-zinc-800 border-zinc-700 text-zinc-200"
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateSeason()}
               />
-              
-              <div className="flex justify-end gap-2">
-                <button
+              <DialogFooter>
+                <Button
+                  variant="ghost"
                   onClick={() => {
                     setShowCreateSeason(false);
                     setNewSeasonName('');
                   }}
-                  className="rounded px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200"
                 >
                   Cancelar
-                </button>
-                <button
-                  onClick={handleCreateSeason}
-                  className="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500"
-                >
-                  Crear
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
+                </Button>
+                <Button onClick={handleCreateSeason}>Crear</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         )}
 
         {showRefreshModal && (
-          <motion.div 
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div 
-              className="w-full max-w-sm rounded-lg bg-[#18181b] p-6 shadow-xl"
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            >
-              <h2 className="text-lg font-semibold text-zinc-100 mb-4">Actualizar desde Jikan</h2>
-              
-              <input
+          <Dialog open={showRefreshModal} onOpenChange={(open) => !open && setShowRefreshModal(false)}>
+            <DialogContent className="bg-[#18181b] border-zinc-800">
+              <DialogHeader>
+                <DialogTitle className="text-zinc-100">Actualizar desde Jikan</DialogTitle>
+              </DialogHeader>
+              <Input
                 type="password"
                 value={refreshPasswordInput}
                 onChange={(e) => {
@@ -319,30 +316,20 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll, onRefre
                   if (refreshPasswordError) setRefreshPasswordError('');
                 }}
                 placeholder="Clave"
-                className="w-full rounded bg-zinc-800 px-3 py-2 text-zinc-200 border border-zinc-700 focus:outline-none focus:border-indigo-500 mb-2"
+                className="bg-zinc-800 border-zinc-700 text-zinc-200"
                 onKeyDown={(e) => e.key === 'Enter' && handleRefreshSubmit()}
               />
-              
               {refreshPasswordError && (
-                <p className="text-sm text-red-500 mb-4">{refreshPasswordError}</p>
+                <p className="text-sm text-red-500">{refreshPasswordError}</p>
               )}
-            
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowRefreshModal(false)}
-                className="rounded px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleRefreshSubmit}
-                className="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-500"
-              >
-                Actualizar
-              </button>
-            </div>
-            </motion.div>
-          </motion.div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setShowRefreshModal(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleRefreshSubmit}>Actualizar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         )}
       </AnimatePresence>
     </>
