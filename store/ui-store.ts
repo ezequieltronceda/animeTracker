@@ -1,7 +1,14 @@
 import { create } from 'zustand';
-import type { Anime, Season } from '@/types';
+import type { Anime, Season, UserStatus, User } from '@/types';
 
 const EDIT_PASSWORD = 'Panchoputo1';
+
+interface PendingChanges {
+  episodesWatched?: { [user in User]?: number[] };
+  maxEpisodes?: number;
+  status?: { [user in User]?: UserStatus };
+  day?: string;
+}
 
 interface UIState {
   drawerOpen: boolean;
@@ -14,6 +21,7 @@ interface UIState {
   dayFilter: string | null;
   seasonFilter: string | null;
   editPasswordError: string | null;
+  pendingChanges: { [animeId: string]: PendingChanges };
   
   openDrawer: () => void;
   closeDrawer: () => void;
@@ -26,6 +34,9 @@ interface UIState {
   setDayFilter: (day: string | null) => void;
   setSeasonFilter: (season: string | null) => void;
   checkEditModeExpiry: () => void;
+  setPendingChanges: (animeId: string, changes: PendingChanges) => void;
+  clearPendingChanges: (animeId?: string) => void;
+  getPendingChangesCount: () => number;
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
@@ -39,6 +50,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   dayFilter: null,
   seasonFilter: null,
   editPasswordError: null,
+  pendingChanges: {},
 
   openDrawer: () => set({ drawerOpen: true }),
   closeDrawer: () => set({ drawerOpen: false }),
@@ -82,6 +94,20 @@ export const useUIStore = create<UIState>((set, get) => ({
       }
     }
   },
+
+  setPendingChanges: (animeId, changes) => set((state) => ({
+    pendingChanges: { ...state.pendingChanges, [animeId]: changes }
+  })),
+
+  clearPendingChanges: (animeId) => set((state) => {
+    if (animeId) {
+      const { [animeId]: _, ...rest } = state.pendingChanges;
+      return { pendingChanges: rest };
+    }
+    return { pendingChanges: {} };
+  }),
+
+  getPendingChangesCount: () => Object.keys(get().pendingChanges).length,
 }));
 
 if (typeof window !== 'undefined') {

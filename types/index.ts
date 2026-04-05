@@ -22,6 +22,7 @@ export interface Anime {
   day?: string;
   order: number;
   episodes: number;
+  maxEpisodes?: number;
   users: {
     eze: UserData;
     pancho: UserData;

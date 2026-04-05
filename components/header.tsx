@@ -9,9 +9,10 @@ interface HeaderProps {
   onAddClick: () => void;
   seasons?: Season[];
   onCreateSeason: (name: string) => void;
+  onSaveAll?: () => void;
 }
 
-export function Header({ onAddClick, seasons, onCreateSeason }: HeaderProps) {
+export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll }: HeaderProps) {
   const { 
     searchQuery, 
     setSearchQuery, 
@@ -22,7 +23,9 @@ export function Header({ onAddClick, seasons, onCreateSeason }: HeaderProps) {
     editPasswordError,
     clearEditPasswordError,
     selectedSeason,
-    setSelectedSeason
+    setSelectedSeason,
+    pendingChanges,
+    getPendingChangesCount
   } = useUIStore();
   
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -131,6 +134,14 @@ export function Header({ onAddClick, seasons, onCreateSeason }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          {editMode && getPendingChangesCount() > 0 && onSaveAll && (
+            <button
+              onClick={onSaveAll}
+              className="rounded bg-amber-600 px-3 py-1.5 text-sm text-white hover:bg-amber-500"
+            >
+              Guardar Todo ({getPendingChangesCount()})
+            </button>
+          )}
           <button
             onClick={handleEditModeToggle}
             className={`rounded px-3 py-1.5 text-sm ${

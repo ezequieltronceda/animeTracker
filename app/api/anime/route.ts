@@ -112,13 +112,17 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, seasonId, user, status, episodesWatched, day } = body;
+    const { id, seasonId, user, status, episodesWatched, day, maxEpisodes } = body;
 
     if (!id || !seasonId) {
       return NextResponse.json({ error: 'ID and seasonId are required' }, { status: 400 });
     }
 
     const updateData: Record<string, any> = {};
+
+    if (maxEpisodes !== undefined) {
+      updateData.maxEpisodes = maxEpisodes;
+    }
 
     if (user) {
       if (status !== undefined) {

@@ -13,11 +13,22 @@ import type { Anime, Season, User, UserStatus } from '@/types';
 interface PendingChanges {
   episodesWatched?: { eze?: number[]; pancho?: number[] };
   status?: { eze?: UserStatus; pancho?: UserStatus };
+  maxEpisodes?: number;
   day?: string;
 }
 
 export default function HomeClient() {
-  const { drawerOpen, modalOpen, openDrawer, closeDrawer, selectedAnime, selectedSeason, setSelectedSeason } = useUIStore();
+  const { 
+    drawerOpen, 
+    modalOpen, 
+    openDrawer, 
+    closeDrawer, 
+    selectedAnime, 
+    selectedSeason, 
+    setSelectedSeason,
+    pendingChanges,
+    clearPendingChanges
+  } = useUIStore();
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [animes, setAnimes] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,6 +119,20 @@ export default function HomeClient() {
       }
     }
 
+    if (changes.maxEpisodes !== undefined) {
+      updatePromises.push(
+        fetch('/api/anime', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: animeId,
+            seasonId,
+            maxEpisodes: changes.maxEpisodes,
+          }),
+        }).then(() => {})
+      );
+    }
+
     if (changes.day !== undefined) {
       updatePromises.push(
         fetch('/api/anime', {
@@ -151,6 +176,16 @@ export default function HomeClient() {
     setDeleteConfirm({ show: false });
   };
 
+  const handleSaveAll = () => {
+    Object.entries(pendingChanges).forEach(([animeId, changes]) => {
+      const anime = animes.find(a => a.id === animeId);
+      if (anime && changes) {
+        handleSaveChanges(animeId, anime.seasonId, changes);
+      }
+    });
+    clearPendingChanges();
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -169,6 +204,7 @@ export default function HomeClient() {
         onAddClick={openDrawer} 
         seasons={seasons} 
         onCreateSeason={handleCreateSeason}
+        onSaveAll={handleSaveAll}
       />
       
       <main className="flex-1 overflow-auto p-4">
