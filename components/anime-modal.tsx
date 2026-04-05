@@ -72,14 +72,16 @@ export function AnimeModal({ anime }: AnimeModalProps) {
                 </div>
               ))}
 
-              <a
-                href={anime.jikanUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-indigo-400 hover:text-indigo-300"
-              >
-                Ver en MyAnimeList →
-              </a>
+              {anime.jikanUrl && (
+                <a
+                  href={anime.jikanUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-indigo-400 hover:text-indigo-300"
+                >
+                  Ver en MyAnimeList →
+                </a>
+              )}
             </div>
           </div>
         </div>

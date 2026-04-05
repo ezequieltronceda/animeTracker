@@ -16,10 +16,10 @@ export interface Anime {
   id: string;
   seasonId: string;
   malId: number;
-  jikanUrl: string;
+  jikanUrl?: string | null;
   title: string;
-  imageUrl: string;
-  day: string;
+  imageUrl?: string | null;
+  day?: string;
   order: number;
   episodes: number;
   users: {

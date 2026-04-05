@@ -6,13 +6,15 @@ import { Header } from '@/components/header';
 import { AnimeTable } from '@/components/anime-table';
 import { AddAnimeDrawer } from '@/components/add-anime-drawer';
 import { AnimeModal } from '@/components/anime-modal';
+import { ConfirmModal } from '@/components/confirm-modal';
 import type { Anime, Season } from '@/types';
 
 export default function HomeClient() {
-  const { drawerOpen, modalOpen, openDrawer, closeDrawer, selectedAnime, selectedSeason, setSelectedSeason } = useUIStore();
+  const { drawerOpen, modalOpen, openDrawer, closeDrawer, selectedAnime, selectedSeason } = useUIStore();
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [animes, setAnimes] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; anime?: Anime }>({ show: false });
 
   const fetchData = (seasonId?: string) => {
     const url = seasonId ? `/api/anime?season=${encodeURIComponent(seasonId)}` : '/api/anime';
@@ -57,9 +59,14 @@ export default function HomeClient() {
     setAnimes(prev => prev.map(a => a.id === updatedAnime.id ? updatedAnime : a));
   };
 
-  const handleDeleteAnime = (anime: Anime) => {
-    if (!confirm(`¿Eliminar "${anime.title}"?`)) return;
+  const handleDeleteClick = (anime: Anime) => {
+    setDeleteConfirm({ show: true, anime });
+  };
+
+  const confirmDelete = () => {
+    if (!deleteConfirm.anime) return;
     
+    const anime = deleteConfirm.anime;
     fetch(`/api/anime?id=${anime.id}&seasonId=${anime.seasonId}`, {
       method: 'DELETE',
     })
@@ -68,7 +75,12 @@ export default function HomeClient() {
           setAnimes(prev => prev.filter(a => a.id !== anime.id));
         }
       })
-      .catch(err => console.error('Error deleting anime:', err));
+      .catch(err => console.error('Error deleting anime:', err))
+      .finally(() => setDeleteConfirm({ show: false }));
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirm({ show: false });
   };
 
   useEffect(() => {
@@ -100,7 +112,7 @@ export default function HomeClient() {
           <AnimeTable 
             animes={animes} 
             onUpdateAnime={handleUpdateAnime}
-            onDeleteAnime={handleDeleteAnime}
+            onDeleteAnime={handleDeleteClick}
           />
         )}
       </main>
@@ -113,6 +125,15 @@ export default function HomeClient() {
         />
       )}
       {modalOpen && selectedAnime && <AnimeModal anime={selectedAnime} />}
+      
+      {deleteConfirm.show && deleteConfirm.anime && (
+        <ConfirmModal
+          title="Eliminar anime"
+          message={`¿Estás seguro de que quieres eliminar "${deleteConfirm.anime.title}"? Esta acción no se puede deshacer.`}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+        />
+      )}
     </div>
   );
 }
