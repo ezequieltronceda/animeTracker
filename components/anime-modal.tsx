@@ -9,6 +9,8 @@ import {
   DialogContent,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Play, ExternalLink } from 'lucide-react';
+import { toMALSlug, toJKAnimeSlug } from '@/lib/utils';
 
 interface AnimeModalProps {
   anime: Anime;
@@ -47,9 +49,28 @@ export function AnimeModal({ anime }: AnimeModalProps) {
                   transition={{ delay: 0.1, duration: 0.4 }}
                 >
                   <div>
-                    <h2 className="text-lg sm:text-xl font-semibold text-zinc-100">{anime.title}</h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg sm:text-xl font-semibold text-zinc-100">{anime.title}</h2>
+                      <a
+                        href={`https://myanimelist.net/anime/${anime.malId}/${toMALSlug(anime.title)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 text-zinc-500 hover:text-indigo-400 transition-colors"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </div>
                     <p className="text-sm text-zinc-500 capitalize">{anime.day} · {anime.episodes} episodes</p>
                   </div>
+                  <a
+                    href={`https://jkanime.net/${toJKAnimeSlug(anime.title)}/`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-shrink-0 flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    <Play className="h-4 w-4" />
+                    <span className="hidden sm:inline">Ver</span>
+                  </a>
                 </motion.div>
 
                 <motion.div 
@@ -95,19 +116,6 @@ export function AnimeModal({ anime }: AnimeModalProps) {
                     </motion.div>
                   ))}
 
-                  {anime.jikanUrl && (
-                    <motion.a
-                      href={anime.jikanUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-indigo-400 hover:text-indigo-300"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.6 }}
-                    >
-                      Ver en MyAnimeList →
-                    </motion.a>
-                  )}
                 </motion.div>
               </div>
             </div>
