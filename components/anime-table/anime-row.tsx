@@ -14,8 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ExternalLink } from 'lucide-react';
-import { toMALSlug } from '@/lib/utils';
+import { ExternalLink, Play } from 'lucide-react';
+import { toMALSlug, toJKAnimeSlug } from '@/lib/utils';
 
 interface AnimeRowProps {
   anime: Anime;
@@ -267,7 +267,18 @@ export function AnimeRow({
               )}
               <div className="flex-1 flex flex-col gap-2 lg:gap-4">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2">
-                  <h3 className="text-base lg:text-xl font-bold text-zinc-100">{anime.title}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base lg:text-xl font-bold text-zinc-100">{anime.title}</h3>
+                    <a
+                      href={`https://jkanime.net/${toJKAnimeSlug(anime.title)}/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex-shrink-0 text-zinc-500 hover:text-green-400 transition-colors"
+                    >
+                      <Play className="h-4 w-4" />
+                    </a>
+                  </div>
                   {anime.score && (
                     <span className="text-sm lg:text-lg text-amber-400 flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-lg">
                       <span className="text-amber-500">★</span>

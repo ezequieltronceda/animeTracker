@@ -9,8 +9,8 @@ import {
   DialogContent,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Play, ExternalLink } from 'lucide-react';
-import { toMALSlug, toJKAnimeSlug } from '@/lib/utils';
+import { ExternalLink } from 'lucide-react';
+import { toMALSlug } from '@/lib/utils';
 
 interface AnimeModalProps {
   anime: Anime;
@@ -62,15 +62,6 @@ export function AnimeModal({ anime }: AnimeModalProps) {
                     </div>
                     <p className="text-sm text-zinc-500 capitalize">{anime.day} · {anime.episodes} episodes</p>
                   </div>
-                  <a
-                    href={`https://jkanime.net/${toJKAnimeSlug(anime.title)}/`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-shrink-0 flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-3 py-1.5 rounded-lg transition-colors"
-                  >
-                    <Play className="h-4 w-4" />
-                    <span className="hidden sm:inline">Ver</span>
-                  </a>
                 </motion.div>
 
                 <motion.div 
