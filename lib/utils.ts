@@ -10,5 +10,5 @@ export function toMALSlug(title: string): string {
 }
 
 export function toJKAnimeSlug(title: string): string {
-  return title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-').toLowerCase();
+  return title.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-').toLowerCase();
 }
