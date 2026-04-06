@@ -14,6 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ExternalLink } from 'lucide-react';
+import { toMALSlug } from '@/lib/utils';
 
 interface AnimeRowProps {
   anime: Anime;
@@ -89,7 +91,18 @@ export function AnimeRow({
               />
             )}
             <div className="flex flex-col gap-0 lg:gap-1">
-              <span className="font-medium text-zinc-200 text-sm lg:text-base leading-tight line-clamp-2">{anime.title}</span>
+              <div className="flex items-center gap-1">
+                <span className="font-medium text-zinc-200 text-sm lg:text-base leading-tight line-clamp-2">{anime.title}</span>
+                <a
+                  href={`https://myanimelist.net/anime/${anime.malId}/${toMALSlug(anime.title)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex-shrink-0 text-zinc-500 hover:text-indigo-400 transition-colors"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
               <span className="text-xs lg:text-sm text-amber-400 flex items-center gap-1">
                 <span className="text-amber-500">★</span>
                 {anime.score ? anime.score.toFixed(1) : '-'}
