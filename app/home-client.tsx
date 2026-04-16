@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Chat } from '@/components/chat';
 
 const AUTH_PASSWORD = 'Panchoputo1';
 const AUTH_KEY = 'pageAuthenticated';
@@ -411,6 +412,8 @@ export default function HomeClient() {
           onCancel={cancelDelete}
         />
       )}
+
+      <Chat />
     </div>
   );
 }
