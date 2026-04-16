@@ -1,14 +1,10 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-
-interface User {
-  id: string;
-  username: string;
-}
 
 interface Message {
   id: string;
@@ -19,76 +15,69 @@ interface Message {
 }
 
 export function Chat() {
-  const socketRef = useRef<Socket | null>(null);
   const [username, setUsername] = useState('');
   const [isJoined, setIsJoined] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const userIdRef = useRef<string>('');
 
   useEffect(() => {
-    if (socketRef.current) return;
+    if (!isJoined) return;
 
-    const newSocket = io();
-    socketRef.current = newSocket;
+    const q = query(
+      collection(db, 'messages'),
+      orderBy('timestamp', 'asc'),
+      limit(100)
+    );
 
-    newSocket.on('init', (data: { users: User[]; messages: Message[] }) => {
-      setUsers(data.users);
-      setMessages(data.messages);
-    });
-
-    newSocket.on('userJoined', (user: User) => {
-      setUsers((prev) => [...prev, user]);
-    });
-
-    newSocket.on('userLeft', (userId: string) => {
-      setUsers((prev) => prev.filter((u) => u.id !== userId));
-    });
-
-    newSocket.on('usernameChanged', (data: { userId: string; username: string }) => {
-      setUsers((prev) => prev.map((u) => u.id === data.userId ? { ...u, username: data.username } : u));
-      setMessages((prev) => prev.map((m) => m.userId === data.userId ? { ...m, username: data.username } : m));
-    });
-
-    newSocket.on('newMessage', (msg: Message) => {
-      setMessages((prev) => [...prev, msg]);
-      if (audioRef.current) {
-        audioRef.current.play().catch(() => {});
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs: Message[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Message[];
+      setMessages(msgs);
+      
+      if (msgs.length > 0 && audioRef.current) {
+        const lastMsg = msgs[msgs.length - 1];
+        if (lastMsg.userId !== userIdRef.current) {
+          audioRef.current.play().catch(() => {});
+        }
       }
     });
 
-    return () => {
-      newSocket.disconnect();
-      socketRef.current = null;
-    };
-  }, []);
+    return () => unsubscribe();
+  }, [isJoined]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleJoin = () => {
-    if (username.trim() && socketRef.current) {
-      socketRef.current.emit('join', username.trim());
+    if (username.trim()) {
+      userIdRef.current = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       setIsJoined(true);
     }
   };
 
-  const handleSendMessage = () => {
-    if (message.trim() && socketRef.current) {
-      socketRef.current.emit('sendMessage', message.trim());
+  const handleSendMessage = async () => {
+    if (message.trim() && isJoined) {
+      await addDoc(collection(db, 'messages'), {
+        userId: userIdRef.current,
+        username: username,
+        text: message.trim(),
+        timestamp: Date.now()
+      });
       setMessage('');
     }
   };
 
   const handleChangeName = () => {
-    if (newUsername.trim() && socketRef.current) {
-      socketRef.current.emit('changeUsername', newUsername.trim());
+    if (newUsername.trim()) {
       setUsername(newUsername.trim());
       setIsEditingName(false);
       setNewUsername('');
@@ -97,12 +86,15 @@ export function Chat() {
 
   if (!isOpen) {
     return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-700 text-white shadow-lg hover:bg-zinc-600"
-      >
-        💬
-      </button>
+      <>
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-4 right-4 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-700 text-white shadow-lg hover:bg-zinc-600"
+        >
+          💬
+        </button>
+        <audio ref={audioRef} src="/yamete.mp3" preload="auto" />
+      </>
     );
   }
 
@@ -125,7 +117,7 @@ export function Chat() {
         <Button onClick={handleJoin} className="w-full">
           Unirse
         </Button>
-        <audio ref={audioRef} src="/yamete.mp3" preload="auto" />
+        <audio ref={audioRef} src="/ yamete.mp3" preload="auto" />
       </div>
     );
   }
@@ -133,7 +125,7 @@ export function Chat() {
   return (
     <div className="fixed bottom-4 right-4 w-72 rounded-lg bg-zinc-900 shadow-lg">
       <div className="flex items-center justify-between border-b border-zinc-800 p-3">
-        <h3 className="text-white">Chat ({users.length})</h3>
+        <h3 className="text-white">Chat</h3>
         <div className="flex items-center gap-2">
           {isEditingName ? (
             <>
