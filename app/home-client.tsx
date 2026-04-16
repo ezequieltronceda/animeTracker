@@ -11,6 +11,52 @@ import { sortSeasonsByDate } from '@/lib/constants';
 import type { Anime, Season, User, UserStatus } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+
+const AUTH_PASSWORD = 'Panchoputo1';
+const AUTH_KEY = 'pageAuthenticated';
+const AUTH_EXPIRY_KEY = 'pageAuthExpiry';
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+function LoginScreen() {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleLogin = () => {
+    if (password === AUTH_PASSWORD) {
+      const expiry = Date.now() + ONE_WEEK_MS;
+      localStorage.setItem(AUTH_KEY, 'true');
+      localStorage.setItem(AUTH_EXPIRY_KEY, expiry.toString());
+      window.location.reload();
+    } else {
+      setError('Clave incorrecta');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#18181b] flex items-center justify-center p-4">
+      <div className="w-full max-w-sm space-y-4">
+        <h1 className="text-2xl font-bold text-zinc-100 text-center">Acceso</h1>
+        <Input
+          type="password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setError('');
+          }}
+          placeholder="Ingresa la clave"
+          className="bg-zinc-800 border-zinc-700 text-zinc-200"
+          onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+        />
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        <Button onClick={handleLogin} className="w-full">
+          Entrar
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function SkeletonRow() {
   return (
@@ -67,6 +113,7 @@ interface PendingChanges {
 }
 
 export default function HomeClient() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const { 
     drawerOpen, 
     modalOpen, 
@@ -267,6 +314,24 @@ export default function HomeClient() {
   };
 
   useEffect(() => {
+    const auth = localStorage.getItem(AUTH_KEY);
+    const expiry = localStorage.getItem(AUTH_EXPIRY_KEY);
+    
+    if (auth === 'true' && expiry) {
+      const expiryTime = parseInt(expiry);
+      if (Date.now() <= expiryTime) {
+        setIsAuthenticated(true);
+      } else {
+        localStorage.removeItem(AUTH_KEY);
+        localStorage.removeItem(AUTH_EXPIRY_KEY);
+        setIsAuthenticated(false);
+      }
+    } else {
+      setIsAuthenticated(false);
+    }
+  }, []);
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -277,6 +342,14 @@ export default function HomeClient() {
       setAnimes([]);
     }
   }, [selectedSeason]);
+
+  if (isAuthenticated === null) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
 
   return (
     <div className="flex min-h-screen flex-col">

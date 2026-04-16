@@ -39,68 +39,18 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll, onRefre
     setDayFilter,
     editMode,
     setEditMode,
-    editPasswordError,
-    clearEditPasswordError,
     selectedSeason,
     setSelectedSeason,
     pendingChanges,
     getPendingChangesCount
   } = useUIStore();
   
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showRefreshModal, setShowRefreshModal] = useState(false);
-  const [refreshPasswordInput, setRefreshPasswordInput] = useState('');
-  const [refreshPasswordError, setRefreshPasswordError] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
   const [showCreateSeason, setShowCreateSeason] = useState(false);
   const [newSeasonName, setNewSeasonName] = useState('');
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
-  const REFRESH_PASSWORD = 'Panchogay';
-
-  const handleRefreshClick = () => {
-    setShowRefreshModal(true);
-    setRefreshPasswordInput('');
-    setRefreshPasswordError('');
-  };
-
-  const handleRefreshSubmit = () => {
-    if (refreshPasswordInput === REFRESH_PASSWORD) {
-      setShowRefreshModal(false);
-      if (onRefreshJikan) onRefreshJikan();
-    } else {
-      setRefreshPasswordError('Clave incorrecta');
-    }
-  };
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const expiry = localStorage.getItem('editModeExpiry');
-      if (expiry) {
-        const expiryTime = parseInt(expiry);
-        if (Date.now() > expiryTime) {
-          localStorage.removeItem('editModeExpiry');
-        } else {
-          setEditMode(true);
-        }
-      }
-    }
-  }, []);
-
   const handleEditModeToggle = () => {
-    if (editMode) {
-      setEditMode(false);
-    } else {
-      setShowPasswordModal(true);
-    }
-  };
-
-  const handlePasswordSubmit = () => {
-    const success = setEditMode(true, passwordInput);
-    if (success) {
-      setShowPasswordModal(false);
-      setPasswordInput('');
-    }
+    setEditMode(!editMode);
   };
 
   const safeSeasons = Array.isArray(seasons) ? seasons : [];
@@ -216,11 +166,11 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll, onRefre
         </AnimatePresence>
 
         <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
-          {onRefreshJikan && (
+          {editMode && onRefreshJikan && (
             <Button
               variant="secondary"
               size="sm"
-              onClick={handleRefreshClick}
+              onClick={onRefreshJikan}
               disabled={isRefreshing}
               className="bg-zinc-700 text-zinc-300 hover:bg-zinc-600 text-xs px-2 py-1 lg:text-sm"
             >
@@ -262,43 +212,6 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll, onRefre
       </header>
 
       <AnimatePresence>
-        {showPasswordModal && (
-          <Dialog open={showPasswordModal} onOpenChange={(open) => !open && setShowPasswordModal(false)}>
-            <DialogContent className="bg-[#18181b] border-zinc-800">
-              <DialogHeader>
-                <DialogTitle className="text-zinc-100">Ingresar clave de edición</DialogTitle>
-              </DialogHeader>
-              <Input
-                type="password"
-                value={passwordInput}
-                onChange={(e) => {
-                  setPasswordInput(e.target.value);
-                  if (editPasswordError) clearEditPasswordError();
-                }}
-                placeholder="Clave"
-                className="bg-zinc-800 border-zinc-700 text-zinc-200"
-                onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-              />
-              {editPasswordError && (
-                <p className="text-sm text-red-500">{editPasswordError}</p>
-              )}
-              <DialogFooter>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setShowPasswordModal(false);
-                    setPasswordInput('');
-                    clearEditPasswordError();
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button onClick={handlePasswordSubmit}>Aceptar</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
-
         {showCreateSeason && (
           <Dialog open={showCreateSeason} onOpenChange={(open) => !open && setShowCreateSeason(false)}>
             <DialogContent className="bg-[#18181b] border-zinc-800">
@@ -324,36 +237,6 @@ export function Header({ onAddClick, seasons, onCreateSeason, onSaveAll, onRefre
                   Cancelar
                 </Button>
                 <Button onClick={handleCreateSeason}>Crear</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
-
-        {showRefreshModal && (
-          <Dialog open={showRefreshModal} onOpenChange={(open) => !open && setShowRefreshModal(false)}>
-            <DialogContent className="bg-[#18181b] border-zinc-800">
-              <DialogHeader>
-                <DialogTitle className="text-zinc-100">Actualizar desde Jikan</DialogTitle>
-              </DialogHeader>
-              <Input
-                type="password"
-                value={refreshPasswordInput}
-                onChange={(e) => {
-                  setRefreshPasswordInput(e.target.value);
-                  if (refreshPasswordError) setRefreshPasswordError('');
-                }}
-                placeholder="Clave"
-                className="bg-zinc-800 border-zinc-700 text-zinc-200"
-                onKeyDown={(e) => e.key === 'Enter' && handleRefreshSubmit()}
-              />
-              {refreshPasswordError && (
-                <p className="text-sm text-red-500">{refreshPasswordError}</p>
-              )}
-              <DialogFooter>
-                <Button variant="ghost" onClick={() => setShowRefreshModal(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleRefreshSubmit}>Actualizar</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
