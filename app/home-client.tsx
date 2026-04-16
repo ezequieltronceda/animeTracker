@@ -35,7 +35,7 @@ function LoginScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-[#18181b] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[url('/ahegao.jpg')] bg-contain bg-no-repeat bg-center flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-4">
         <h1 className="text-2xl font-bold text-zinc-100 text-center">Acceso</h1>
         <Input
@@ -46,7 +46,7 @@ function LoginScreen() {
             setError('');
           }}
           placeholder="Ingresa la clave"
-          className="bg-zinc-800 border-zinc-700 text-zinc-200"
+          className="bg-zinc-800/90 border-zinc-700 text-zinc-200"
           onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
         />
         {error && <p className="text-sm text-red-500">{error}</p>}
