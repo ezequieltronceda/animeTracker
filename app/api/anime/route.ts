@@ -106,10 +106,13 @@ export async function POST(request: Request) {
         malId: animeData.mal_id,
         jikanUrl: animeData.url || null,
         title: animeData.title_english || animeData.title,
+        titleJp: animeData.title_japanese || null,
         imageUrl: animeData.images?.jpg?.large_image_url || animeData.images?.jpg?.image_url || null,
         day,
         order: nextOrder,
         episodes: animeData.episodes || 0,
+        synopsis: animeData.synopsis || null,
+        genres: Array.isArray(animeData.genres) ? animeData.genres.map((g: { name: string }) => g.name) : [],
         users: {
           eze: {
             status: 'pendiente',
@@ -250,6 +253,18 @@ export async function PATCH(request: Request) {
           }
           if (animeData.title) {
             updateData.title = animeData.title;
+          }
+          if (animeData.url) {
+            updateData.jikanUrl = animeData.url;
+          }
+          if (animeData.title_japanese) {
+            updateData.titleJp = animeData.title_japanese;
+          }
+          if (animeData.synopsis) {
+            updateData.synopsis = animeData.synopsis;
+          }
+          if (Array.isArray(animeData.genres)) {
+            updateData.genres = animeData.genres.map((g: { name: string }) => g.name);
           }
 
           if (Object.keys(updateData).length > 0) {

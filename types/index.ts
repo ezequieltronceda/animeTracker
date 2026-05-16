@@ -18,12 +18,15 @@ export interface Anime {
   malId: number;
   jikanUrl?: string | null;
   title: string;
+  titleJp?: string | null;
   imageUrl?: string | null;
   day?: string;
   order: number;
   episodes: number;
   maxEpisodes?: number;
   score?: number;
+  synopsis?: string | null;
+  genres?: string[];
   users: {
     eze: UserData;
     pancho: UserData;

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:claude.ai)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(mkdir -p /tmp/design_extract)",
+      "Bash(cp \"C:\\\\Users\\\\Lenovo\\\\.claude\\\\projects\\\\c--Users-Lenovo-Desktop-olor-a-culo\\\\27da4b59-2a39-4125-82f9-54b735cbe6e8\\\\tool-results\\\\webfetch-1778918356142-bjg91x.bin\" /tmp/design_extract/design.tar.gz)",
+      "Read(//tmp/**)",
+      "Bash(tar -tzf design.tar.gz)",
+      "Bash(tar -xzf design.tar.gz)",
+      "Bash(file \"/c/Users/Lenovo/.claude/projects/c--Users-Lenovo-Desktop-olor-a-culo/1086c7c6-e1d3-4509-833b-55eb2e3b8934/tool-results/webfetch-1778918427499-0dok6s.bin\")",
+      "Read(//c/Users/Lenovo/.claude/projects/c--Users-Lenovo-Desktop-olor-a-culo/1086c7c6-e1d3-4509-833b-55eb2e3b8934/tool-results/**)",
+      "Bash(mkdir -p /tmp/design)",
+      "Bash(cp \"/c/Users/Lenovo/.claude/projects/c--Users-Lenovo-Desktop-olor-a-culo/1086c7c6-e1d3-4509-833b-55eb2e3b8934/tool-results/webfetch-1778918427499-0dok6s.bin\" ./design.tar.gz)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(npx eslint *)",
+      "Bash(echo \"TSC=$?\")"
+    ]
+  }
+}
