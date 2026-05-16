@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ExternalLink, Play } from 'lucide-react';
+import { ExternalLink, Play, Skull } from 'lucide-react';
 import { toMALSlug, toJKAnimeSlug } from '@/lib/utils';
 
 interface AnimeRowProps {
@@ -306,8 +306,13 @@ export function AnimeRow({
                               ))}
                             </SelectContent>
                           </Select>
+                        ) : getLocalStatus(user) === 'ni_en_un_millon' ? (
+                          <Skull
+                            className="h-3 w-3"
+                            style={{ color: getStatusColor(getLocalStatus(user)) }}
+                          />
                         ) : (
-                          <span 
+                          <span
                             className="h-2 w-2 rounded-full"
                             style={{ backgroundColor: getStatusColor(getLocalStatus(user)) }}
                           />

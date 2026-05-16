@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useUIStore } from '@/store/ui-store';
 import { Header } from '@/components/header';
-import { AnimeTable } from '@/components/anime-table';
+import { AnimeGrid, AmbientBackground } from '@/components/anime-grid';
 import { AddAnimeDrawer } from '@/components/add-anime-drawer';
-import { AnimeModal } from '@/components/anime-modal';
 import { ConfirmModal } from '@/components/confirm-modal';
 import { sortSeasonsByDate } from '@/lib/constants';
 import type { Anime, Season, User, UserStatus } from '@/types';
@@ -13,7 +12,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Chat } from '@/components/chat';
 
 const AUTH_PASSWORD = 'Panchoputo1';
 const AUTH_KEY = 'pageAuthenticated';
@@ -59,49 +57,27 @@ function LoginScreen() {
   );
 }
 
-function SkeletonRow() {
+function SkeletonGrid() {
   return (
-    <tr className="border-b border-zinc-800/50">
-      <td className="p-4"><Skeleton className="h-5 w-8" /></td>
-      <td className="p-4">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-20 w-14 rounded-lg" />
-          <div className="space-y-2">
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="h-4 w-20" />
+    <div className="grid grid-cols-2 gap-4 px-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:px-6 xl:grid-cols-6">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div
+          key={i}
+          className="overflow-hidden rounded-2xl border border-white/5 bg-white/[.025]"
+        >
+          <Skeleton className="aspect-[3/4] w-full rounded-none" />
+          <div className="space-y-3 p-3.5">
+            <div className="flex items-center gap-2.5">
+              <Skeleton className="h-5 w-5 rounded-full" />
+              <Skeleton className="h-3 flex-1" />
+            </div>
+            <div className="flex items-center gap-2.5">
+              <Skeleton className="h-5 w-5 rounded-full" />
+              <Skeleton className="h-3 flex-1" />
+            </div>
           </div>
         </div>
-      </td>
-      <td className="p-4"><Skeleton className="h-7 w-20" /></td>
-      <td className="p-4"><Skeleton className="h-9 w-36" /></td>
-      <td className="p-4"><Skeleton className="h-9 w-36" /></td>
-      <td className="p-4"><Skeleton className="h-5 w-10" /></td>
-    </tr>
-  );
-}
-
-function SkeletonTable() {
-  return (
-    <div className="w-full">
-      <div className="w-full overflow-auto">
-        <table className="w-full border-collapse text-base">
-          <thead className="sticky top-0 z-10 bg-[#18181b]">
-            <tr>
-              <th className="w-16 p-3 text-left text-sm font-medium text-zinc-500">#</th>
-              <th className="p-3 text-left text-sm font-medium text-zinc-500">Anime</th>
-              <th className="w-32 p-3 text-left text-sm font-medium text-zinc-500">Día</th>
-              <th className="w-48 p-3 text-left text-sm font-medium text-zinc-500">Eze</th>
-              <th className="w-48 p-3 text-left text-sm font-medium text-zinc-500">Pancho</th>
-              <th className="w-24 p-3 text-left text-sm font-medium text-zinc-500">Eps</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: 8 }).map((_, i) => (
-              <SkeletonRow key={i} />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      ))}
     </div>
   );
 }
@@ -115,22 +91,21 @@ interface PendingChanges {
 
 export default function HomeClient() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const { 
-    drawerOpen, 
-    modalOpen, 
-    openDrawer, 
-    closeDrawer, 
-    selectedAnime, 
-    selectedSeason, 
+  const {
+    drawerOpen,
+    openDrawer,
+    closeDrawer,
+    selectedSeason,
     setSelectedSeason,
     pendingChanges,
-    clearPendingChanges
+    clearPendingChanges,
   } = useUIStore();
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [animes, setAnimes] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; anime?: Anime }>({ show: false });
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
 
   const fetchData = (seasonId?: string) => {
     const url = seasonId ? `/api/anime?season=${encodeURIComponent(seasonId)}` : '/api/anime';
@@ -138,11 +113,13 @@ export default function HomeClient() {
     fetch(url)
       .then(res => res.json())
       .then(data => {
+        let hasSeasons = false;
         if (data.seasons) {
           const sorted = sortSeasonsByDate(data.seasons);
           setSeasons(sorted);
-          
-          if (!selectedSeason && sorted.length > 0) {
+          hasSeasons = sorted.length > 0;
+
+          if (!selectedSeason && hasSeasons) {
             setSelectedSeason(sorted[0]);
           }
         }
@@ -153,7 +130,13 @@ export default function HomeClient() {
         } else {
           setAnimes([]);
         }
-        setLoading(false);
+        // Keep the skeleton up until we've actually loaded animes for a season.
+        // The bare seasons-list fetch (no seasonId) is followed by another
+        // fetch triggered by the selectedSeason useEffect — finalize loading
+        // only when we have real animes (or when there's nothing left to load).
+        if (seasonId || !hasSeasons) {
+          setLoading(false);
+        }
       })
       .catch(err => {
         console.error('Error fetching data:', err);
@@ -312,6 +295,8 @@ export default function HomeClient() {
       }
     });
     clearPendingChanges();
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 1800);
   };
 
   useEffect(() => {
@@ -353,17 +338,18 @@ export default function HomeClient() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header 
-        onAddClick={openDrawer} 
-        seasons={seasons} 
+    <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#0a0a0c] text-zinc-50">
+      <AmbientBackground />
+      <Header
+        onAddClick={openDrawer}
+        seasons={seasons}
         onCreateSeason={handleCreateSeason}
         onSaveAll={handleSaveAll}
         onRefreshJikan={handleRefreshJikan}
         isRefreshing={isRefreshing}
       />
-      
-      <main className="flex-1 overflow-auto p-4">
+
+      <main className="relative z-[1] flex flex-1 flex-col">
         <AnimatePresence mode="wait">
           {loading ? (
             <motion.div
@@ -372,8 +358,9 @@ export default function HomeClient() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
+              className="pt-6"
             >
-              <SkeletonTable />
+              <SkeletonGrid />
             </motion.div>
           ) : (
             <motion.div
@@ -382,11 +369,15 @@ export default function HomeClient() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
+              className="flex flex-1 flex-col"
             >
-              <AnimeTable 
+              <AnimeGrid
                 animes={animes}
+                season={selectedSeason}
                 onSaveChanges={handleSaveChanges}
                 onDeleteAnime={handleDeleteClick}
+                onAddAnime={openDrawer}
+                savedFlash={savedFlash}
               />
             </motion.div>
           )}
@@ -394,15 +385,14 @@ export default function HomeClient() {
       </main>
 
       {drawerOpen && selectedSeason && (
-        <AddAnimeDrawer 
+        <AddAnimeDrawer
           open={drawerOpen}
-          onClose={closeDrawer} 
-          onAdd={handleAddAnime} 
-          seasonId={selectedSeason.id} 
+          onClose={closeDrawer}
+          onAdd={handleAddAnime}
+          seasonId={selectedSeason.id}
         />
       )}
-      {modalOpen && selectedAnime && <AnimeModal anime={selectedAnime} />}
-      
+
       {deleteConfirm.show && deleteConfirm.anime && (
         <ConfirmModal
           open={deleteConfirm.show}
@@ -412,8 +402,6 @@ export default function HomeClient() {
           onCancel={cancelDelete}
         />
       )}
-
-      <Chat />
     </div>
   );
 }

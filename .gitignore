@@ -41,9 +41,11 @@ yarn-error.log*
 next-env.d.ts
 
 # docs
-docs/
-prompts/
+
 
 # project specific
 TODO.md
 .claude/worktrees/fervent-matsumoto
+
+
+.claude/settings.json
