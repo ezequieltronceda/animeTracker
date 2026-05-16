@@ -2,6 +2,10 @@
   "name": "olor-a-culo",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.1.2",
+  "engines": {
+    "pnpm": ">=11.0.0 <12.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -37,5 +41,19 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@firebase/util",
+      "esbuild",
+      "protobufjs",
+      "sharp",
+      "unrs-resolver",
+      "msw@2.14.6",
+      "firebase",
+      "firestore",
+      "firebase-admin",
+      "firebase-admin/app"
+    ]
   }
 }

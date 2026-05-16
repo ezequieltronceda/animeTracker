@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useUIStore } from '@/store/ui-store';
 import { Header } from '@/components/header';
-import { AnimeTable } from '@/components/anime-table';
+import { AnimeGrid } from '@/components/anime-grid';
 import { AddAnimeDrawer } from '@/components/add-anime-drawer';
 import { AnimeModal } from '@/components/anime-modal';
 import { ConfirmModal } from '@/components/confirm-modal';
-import { sortSeasonsByDate } from '@/lib/constants';
+import { sortSeasonsByDate, formatSeasonName } from '@/lib/constants';
 import type { Anime, Season, User, UserStatus } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -59,49 +59,34 @@ function LoginScreen() {
   );
 }
 
-function SkeletonRow() {
+function SkeletonGrid() {
   return (
-    <tr className="border-b border-zinc-800/50">
-      <td className="p-4"><Skeleton className="h-5 w-8" /></td>
-      <td className="p-4">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-20 w-14 rounded-lg" />
-          <div className="space-y-2">
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="h-4 w-20" />
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+        gap: 18,
+        padding: '20px 24px',
+      }}
+    >
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            borderRadius: 14,
+            background: 'rgba(255,255,255,.025)',
+            border: '1px solid rgba(255,255,255,.06)',
+            overflow: 'hidden',
+          }}
+        >
+          <Skeleton className="aspect-3/4 w-full rounded-none" />
+          <div className="p-3 space-y-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+            <Skeleton className="h-3 w-2/3" />
           </div>
         </div>
-      </td>
-      <td className="p-4"><Skeleton className="h-7 w-20" /></td>
-      <td className="p-4"><Skeleton className="h-9 w-36" /></td>
-      <td className="p-4"><Skeleton className="h-9 w-36" /></td>
-      <td className="p-4"><Skeleton className="h-5 w-10" /></td>
-    </tr>
-  );
-}
-
-function SkeletonTable() {
-  return (
-    <div className="w-full">
-      <div className="w-full overflow-auto">
-        <table className="w-full border-collapse text-base">
-          <thead className="sticky top-0 z-10 bg-[#18181b]">
-            <tr>
-              <th className="w-16 p-3 text-left text-sm font-medium text-zinc-500">#</th>
-              <th className="p-3 text-left text-sm font-medium text-zinc-500">Anime</th>
-              <th className="w-32 p-3 text-left text-sm font-medium text-zinc-500">Día</th>
-              <th className="w-48 p-3 text-left text-sm font-medium text-zinc-500">Eze</th>
-              <th className="w-48 p-3 text-left text-sm font-medium text-zinc-500">Pancho</th>
-              <th className="w-24 p-3 text-left text-sm font-medium text-zinc-500">Eps</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: 8 }).map((_, i) => (
-              <SkeletonRow key={i} />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      ))}
     </div>
   );
 }
@@ -352,18 +337,22 @@ export default function HomeClient() {
     return <LoginScreen />;
   }
 
+  const seasonLabel = selectedSeason
+    ? formatSeasonName(selectedSeason.name)
+    : 'Sin temporada';
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header 
-        onAddClick={openDrawer} 
-        seasons={seasons} 
+    <div className="flex min-h-screen flex-col" style={{ background: '#0a0a0c' }}>
+      <Header
+        onAddClick={openDrawer}
+        seasons={seasons}
         onCreateSeason={handleCreateSeason}
         onSaveAll={handleSaveAll}
         onRefreshJikan={handleRefreshJikan}
         isRefreshing={isRefreshing}
       />
-      
-      <main className="flex-1 overflow-auto p-4">
+
+      <main className="flex-1 overflow-auto">
         <AnimatePresence mode="wait">
           {loading ? (
             <motion.div
@@ -373,7 +362,7 @@ export default function HomeClient() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <SkeletonTable />
+              <SkeletonGrid />
             </motion.div>
           ) : (
             <motion.div
@@ -383,10 +372,12 @@ export default function HomeClient() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <AnimeTable 
+              <AnimeGrid
                 animes={animes}
+                seasonLabel={seasonLabel}
                 onSaveChanges={handleSaveChanges}
                 onDeleteAnime={handleDeleteClick}
+                onAddAnime={openDrawer}
               />
             </motion.div>
           )}

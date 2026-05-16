@@ -189,6 +189,50 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
+/* Cover Grid animations */
+@keyframes cgCardIn {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes cgFadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes cgFadeScale {
+  from { opacity: 0; transform: scale(.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes cgPipPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+@keyframes cgSparkle {
+  0%   { transform: scale(.3) rotate(0deg);   opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: scale(1.8) rotate(120deg); opacity: 0; }
+}
+@keyframes cgDrift1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(60px, -30px) scale(1.15); }
+}
+@keyframes cgDrift2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-80px, 40px) scale(.95); }
+}
+@keyframes cgStatusPulse {
+  0%, 100% { box-shadow: 0 0 0 3px var(--pulse-color, rgba(34,197,94,.18)); }
+  50%      { box-shadow: 0 0 0 6px var(--pulse-color, rgba(34,197,94,0)); }
+}
+@keyframes cgShine {
+  0%   { transform: translateX(-120%) skewX(-20deg); }
+  100% { transform: translateX(120%)  skewX(-20deg); }
+}
+@keyframes cgPendingPulse {
+  0%, 100% { box-shadow: 0 4px 14px -4px rgba(245,158,11,.55), inset 0 1px 0 rgba(255,255,255,.25); }
+  50%      { box-shadow: 0 4px 18px -2px rgba(245,158,11,.8),  inset 0 1px 0 rgba(255,255,255,.25); }
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(1 0 0);

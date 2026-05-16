@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(ls '/c/Users/Lenovo/.claude/projects/c--Users-Lenovo-Desktop-olor-a-culo/a4b2c364-f9ee-49bb-9fc4-04ee032a33d2/tool-results/')",
+      "Read(//c/Users/Lenovo/.claude/projects/c--Users-Lenovo-Desktop-olor-a-culo/a4b2c364-f9ee-49bb-9fc4-04ee032a33d2/tool-results//**)",
+      "Bash(pnpm --version)",
+      "Bash(corepack --version)",
+      "Bash(corepack pnpm *)"
+    ]
+  }
+}
