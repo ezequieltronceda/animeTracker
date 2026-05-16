@@ -113,11 +113,13 @@ export default function HomeClient() {
     fetch(url)
       .then(res => res.json())
       .then(data => {
+        let hasSeasons = false;
         if (data.seasons) {
           const sorted = sortSeasonsByDate(data.seasons);
           setSeasons(sorted);
-          
-          if (!selectedSeason && sorted.length > 0) {
+          hasSeasons = sorted.length > 0;
+
+          if (!selectedSeason && hasSeasons) {
             setSelectedSeason(sorted[0]);
           }
         }
@@ -128,7 +130,13 @@ export default function HomeClient() {
         } else {
           setAnimes([]);
         }
-        setLoading(false);
+        // Keep the skeleton up until we've actually loaded animes for a season.
+        // The bare seasons-list fetch (no seasonId) is followed by another
+        // fetch triggered by the selectedSeason useEffect — finalize loading
+        // only when we have real animes (or when there's nothing left to load).
+        if (seasonId || !hasSeasons) {
+          setLoading(false);
+        }
       })
       .catch(err => {
         console.error('Error fetching data:', err);

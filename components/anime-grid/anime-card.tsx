@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { ChevronDown, ExternalLink, Pencil, Play, Star, Trash2 } from 'lucide-react';
 import { COLORS, DAYS, STATUS_LABELS } from '@/lib/constants';
 import { toJKAnimeSlug, upgradeMalImage } from '@/lib/utils';
-import { PaginatedEpisodeGrid } from './episode-grid';
+import { PaginatedEpisodeGrid, nextUnwatched } from './episode-grid';
 import type { Anime, User, UserStatus } from '@/types';
 
 const ACCENT = '#6366f1';
@@ -361,6 +360,7 @@ function UserRow({
   status,
   watched,
   max,
+  nextEp,
   editMode,
   onStatusChange,
   onMarkNext,
@@ -369,6 +369,8 @@ function UserRow({
   status: UserStatus;
   watched: number;
   max: number;
+  /** First gap in the watched set, or null when fully caught up. */
+  nextEp: number | null;
   editMode: boolean;
   onStatusChange: (s: UserStatus) => void;
   onMarkNext: () => void;
@@ -376,7 +378,7 @@ function UserRow({
   const u = USERS[user];
   const meta = STATUS_SOFT[status];
   const dim = ['pendiente', 'dropeado', 'ni_en_un_millon'].includes(status);
-  const canMarkNext = status === 'viendo' && watched < max;
+  const canMarkNext = status === 'viendo' && nextEp != null;
 
   return (
     <div className="flex items-center gap-2.5">
@@ -413,7 +415,7 @@ function UserRow({
             e.stopPropagation();
             onMarkNext();
           }}
-          title={`Marcar ep ${watched + 1}`}
+          title={`Marcar ep ${nextEp}`}
           className="cg-next-btn inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-bold leading-none"
           style={{
             background: `${u.color}22`,
@@ -425,7 +427,7 @@ function UserRow({
             ['--cg-user' as never]: u.color,
           }}
         >
-          +{watched + 1}
+          +{nextEp}
         </button>
       )}
     </div>
@@ -471,6 +473,8 @@ export function AnimeCard({
   const panchoWatchedSet = new Set(panchoEpisodes);
   const ezeWatchedCount = ezeEpisodes.length;
   const panchoWatchedCount = panchoEpisodes.length;
+  const ezeNext = nextUnwatched(ezeWatchedSet, displayMax);
+  const panchoNext = nextUnwatched(panchoWatchedSet, displayMax);
 
   const synced =
     ezeWatchedCount === panchoWatchedCount &&
@@ -502,32 +506,26 @@ export function AnimeCard({
         style={{ aspectRatio: '3 / 4' }}
         onClick={onOpenDetail}
       >
-        <motion.div
-          layoutId={`anime-cover-${anime.id}`}
-          className="absolute inset-0 overflow-hidden"
-          transition={{ type: 'spring', stiffness: 220, damping: 26 }}
+        <div
+          className="absolute inset-0"
+          style={{
+            transform: hovering ? 'scale(1.06)' : 'scale(1)',
+            transition: 'transform .55s cubic-bezier(.22,.61,.36,1)',
+          }}
         >
-          <div
-            className="absolute inset-0"
-            style={{
-              transform: hovering ? 'scale(1.06)' : 'scale(1)',
-              transition: 'transform .55s cubic-bezier(.22,.61,.36,1)',
-            }}
-          >
-            {anime.imageUrl ? (
-              <img
-                src={upgradeMalImage(anime.imageUrl)}
-                alt={anime.title}
-                className="h-full w-full object-cover"
-                loading="lazy"
-                decoding="async"
-                draggable={false}
-              />
-            ) : (
-              <CoverPlaceholder seed={anime.id} short={anime.title} />
-            )}
-          </div>
-        </motion.div>
+          {anime.imageUrl ? (
+            <img
+              src={upgradeMalImage(anime.imageUrl)}
+              alt={anime.title}
+              className="h-full w-full object-cover"
+              loading="lazy"
+              decoding="async"
+              draggable={false}
+            />
+          ) : (
+            <CoverPlaceholder seed={anime.id} short={anime.title} />
+          )}
+        </div>
         <div
           className="absolute inset-0"
           style={{
@@ -661,6 +659,7 @@ export function AnimeCard({
           status={ezeStatus}
           watched={ezeWatchedCount}
           max={displayMax}
+          nextEp={ezeNext}
           editMode={editMode}
           onStatusChange={(s) => onStatusChange('eze', s)}
           onMarkNext={() => onMarkNext('eze')}
@@ -670,6 +669,7 @@ export function AnimeCard({
           status={panchoStatus}
           watched={panchoWatchedCount}
           max={displayMax}
+          nextEp={panchoNext}
           editMode={editMode}
           onStatusChange={(s) => onStatusChange('pancho', s)}
           onMarkNext={() => onMarkNext('pancho')}

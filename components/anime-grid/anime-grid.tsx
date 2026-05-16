@@ -1,12 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
 import { Plus, Sparkles } from 'lucide-react';
 import { useUIStore } from '@/store/ui-store';
 import { AnimeCard } from './anime-card';
 import { AnimeDetail } from './anime-detail';
 import { SectionHeader } from './section-header';
+import { nextUnwatched } from './episode-grid';
 import type { Anime, Season, User, UserStatus } from '@/types';
 
 const ACCENT = '#6366f1';
@@ -42,12 +44,37 @@ export function AnimeGrid({
     pendingChanges,
     setPendingChanges,
   } = useUIStore();
-  const [selectedAnimeId, setSelectedAnimeId] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedAnimeId = searchParams.get('anime');
+  const pushedHistoryRef = useRef(false);
+
+  const openDetail = useCallback(
+    (id: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('anime', id);
+      pushedHistoryRef.current = true;
+      router.push(`?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  const closeDetail = useCallback(() => {
+    if (pushedHistoryRef.current) {
+      pushedHistoryRef.current = false;
+      router.back();
+    } else {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('anime');
+      const qs = params.toString();
+      router.replace(qs ? `?${qs}` : '?', { scroll: false });
+    }
+  }, [router, searchParams]);
 
   useEffect(() => {
     // Close any open detail dialog when the season switches.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedAnimeId(null);
+    if (selectedAnimeId) closeDetail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [season?.id]);
 
   useEffect(() => {
@@ -132,13 +159,14 @@ export function AnimeGrid({
 
   const handleMarkNext = useCallback(
     (anime: Anime, user: User) => {
-      // Quick-mark works even outside edit mode and saves immediately.
+      // Quick-mark works even outside edit mode and saves immediately. "Next"
+      // is the first gap in the watched set, not `length + 1` — for [1,2,4]
+      // we want to mark 3, not 5 (which doesn't exist) or 4 (already watched).
       const current = getLocalEpisodes(anime, user);
-      const watched = current.length;
       const displayMax = getDisplayMax(anime);
-      const next = watched + 1;
-      if (next > displayMax) return;
-      const newEps = [...current.filter((e) => e !== next), next].sort((a, b) => a - b);
+      const next = nextUnwatched(new Set(current), displayMax);
+      if (next == null) return;
+      const newEps = [...current, next].sort((a, b) => a - b);
       onSaveChanges(anime.id, anime.seasonId, {
         episodesWatched: { [user]: newEps },
       });
@@ -236,7 +264,7 @@ export function AnimeGrid({
                   ezeEpisodes={getLocalEpisodes(a, 'eze')}
                   panchoEpisodes={getLocalEpisodes(a, 'pancho')}
                   displayMax={getDisplayMax(a)}
-                  onOpenDetail={() => setSelectedAnimeId(a.id)}
+                  onOpenDetail={() => openDetail(a.id)}
                   onEpisodeToggle={(u, ep, done) =>
                     handleEpisodeToggle(a, u, ep, done)
                   }
@@ -257,7 +285,7 @@ export function AnimeGrid({
           <AnimeDetail
             key={selectedAnime.id}
             anime={selectedAnime}
-            onClose={() => setSelectedAnimeId(null)}
+            onClose={closeDetail}
             editMode={editMode}
             ezeStatus={getLocalStatus(selectedAnime, 'eze')}
             panchoStatus={getLocalStatus(selectedAnime, 'pancho')}

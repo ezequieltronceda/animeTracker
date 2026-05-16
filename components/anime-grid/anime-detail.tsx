@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
   Check,
@@ -14,7 +15,7 @@ import {
 import { COLORS, DAYS, STATUS_LABELS } from '@/lib/constants';
 import { toJKAnimeSlug, upgradeMalImage } from '@/lib/utils';
 import type { Anime, User, UserStatus } from '@/types';
-import { PaginatedEpisodeGrid } from './episode-grid';
+import { PaginatedEpisodeGrid, nextUnwatched } from './episode-grid';
 
 const ACCENT = '#6366f1';
 
@@ -81,7 +82,16 @@ export function AnimeDetail({
   const [scrollY, setScrollY] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const prevOverflowRef = useRef<string>('');
+
+  // Mount flag for SSR-safe portal.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)');
@@ -92,20 +102,29 @@ export function AnimeDetail({
   }, []);
 
   useEffect(() => {
-    const prev = document.body.style.overflow;
+    prevOverflowRef.current = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevOverflowRef.current;
     };
   }, []);
 
+  // Snappy close: release body scroll + disable pointer events the moment the
+  // user requests close, even though framer-motion holds the exit animation.
+  const requestClose = useCallback(() => {
+    if (isClosing) return;
+    setIsClosing(true);
+    document.body.style.overflow = prevOverflowRef.current;
+    onClose();
+  }, [isClosing, onClose]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') requestClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [requestClose]);
 
   useEffect(() => {
     // Reset scroll + transient UI state when the selected anime changes.
@@ -149,18 +168,21 @@ export function AnimeDetail({
     anime.jikanUrl ?? `https://myanimelist.net/anime/${anime.malId}`;
   const jkUrl = `https://jkanime.net/${toJKAnimeSlug(anime.title)}/`;
 
-  return (
+  if (!mounted) return null;
+
+  const dialogNode = (
     <motion.div
-      onClick={onClose}
+      onClick={requestClose}
       className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-6"
       style={{
         background: 'rgba(0,0,0,.7)',
         backdropFilter: 'blur(8px)',
+        pointerEvents: isClosing ? 'none' : 'auto',
       }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.18 }}
     >
       <motion.div
         onClick={(e) => e.stopPropagation()}
@@ -173,10 +195,10 @@ export function AnimeDetail({
             '0 40px 80px -24px rgba(0,0,0,.85), 0 0 0 1px rgba(255,255,255,.02)',
           transformOrigin: 'center',
         }}
-        initial={{ opacity: 0, scale: 0.78, rotate: -8 }}
+        initial={{ opacity: 0, scale: 0.82, rotate: -6 }}
         animate={{ opacity: 1, scale: 1, rotate: 0 }}
-        exit={{ opacity: 0, scale: 0.85, rotate: 6 }}
-        transition={{ type: 'spring', stiffness: 210, damping: 24 }}
+        exit={{ opacity: 0, scale: 0.9, rotate: 4 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 26, mass: 0.7 }}
       >
         <div
           ref={scrollRef}
@@ -249,7 +271,7 @@ export function AnimeDetail({
                 </button>
               )}
               <button
-                onClick={onClose}
+                onClick={requestClose}
                 className="flex h-8 w-8 items-center justify-center rounded-lg border text-white/85"
                 style={{
                   background: 'rgba(0,0,0,.5)',
@@ -268,10 +290,8 @@ export function AnimeDetail({
                 padding: `0 ${heroPX}px ${heroPB}px`,
               }}
             >
-              <motion.div
-                layoutId={`anime-cover-${anime.id}`}
+              <div
                 className="flex-shrink-0 overflow-hidden"
-                transition={{ type: 'spring', stiffness: 220, damping: 26 }}
                 style={{
                   width: coverW,
                   height: coverH,
@@ -297,7 +317,7 @@ export function AnimeDetail({
                     }}
                   />
                 )}
-              </motion.div>
+              </div>
 
               <div className="min-w-0 flex-1 pb-1">
                 <div
@@ -545,7 +565,7 @@ export function AnimeDetail({
                 onClick={() => {
                   onDelete();
                   setConfirmDelete(false);
-                  onClose();
+                  requestClose();
                 }}
                 className="rounded-lg px-4 py-2 text-xs font-semibold text-white"
                 style={{
@@ -560,6 +580,8 @@ export function AnimeDetail({
       )}
     </motion.div>
   );
+
+  return createPortal(dialogNode, document.body);
 }
 
 function Chip({
@@ -683,7 +705,8 @@ function UserDetailPanel({
   const u = USERS[user];
   const meta = STATUS_SOFT[status];
   const dim = ['pendiente', 'dropeado', 'ni_en_un_millon'].includes(status);
-  const canMarkNext = status === 'viendo' && watchedCount < max;
+  const nextEp = nextUnwatched(watchedSet, max);
+  const canMarkNext = status === 'viendo' && nextEp != null;
 
   return (
     <div
@@ -745,7 +768,7 @@ function UserDetailPanel({
             borderColor: `${u.color}44`,
           }}
         >
-          <Check className="h-3 w-3" /> Marcar episodio {watchedCount + 1}
+          <Check className="h-3 w-3" /> Marcar episodio {nextEp}
         </button>
       )}
 

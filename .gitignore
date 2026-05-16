@@ -46,3 +46,6 @@ next-env.d.ts
 # project specific
 TODO.md
 .claude/worktrees/fervent-matsumoto
+
+
+.claude/settings.json

@@ -5,13 +5,27 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PAGE_SIZE = 24;
 
-function consecutive(watchedSet: Set<number>, max: number): number {
+/**
+ * Highest N such that episodes 1..N are all in `watchedSet`. Stops at the first
+ * gap, so for `{1,2,4}` it returns 2 (meaning "next to watch" is 3, not 5).
+ */
+export function consecutive(watchedSet: Set<number>, max: number): number {
   let c = 0;
   for (let i = 1; i <= max; i++) {
     if (watchedSet.has(i)) c = i;
     else break;
   }
   return c;
+}
+
+/** First unwatched ep starting from 1, or `null` if all are watched up to `max`. */
+export function nextUnwatched(
+  watchedSet: Set<number>,
+  max: number,
+): number | null {
+  const c = consecutive(watchedSet, max);
+  const n = c + 1;
+  return n <= max ? n : null;
 }
 
 interface PipGridProps {
