@@ -9,7 +9,7 @@ import {
   DialogContent,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Skull } from 'lucide-react';
 import { toMALSlug } from '@/lib/utils';
 
 interface AnimeModalProps {
@@ -81,13 +81,26 @@ export function AnimeModal({ anime }: AnimeModalProps) {
                       <h3 className="text-sm font-medium text-zinc-400 uppercase mb-2">{user}</h3>
                       
                       <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-                        <motion.span 
-                          className="h-3 w-3 rounded-full"
-                          style={{ backgroundColor: getStatusColor(anime.users[user].status) }}
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: 0.4 + index * 0.1, type: 'spring' as const }}
-                        />
+                        {anime.users[user].status === 'ni_en_un_millon' ? (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 0.4 + index * 0.1, type: 'spring' as const }}
+                          >
+                            <Skull
+                              className="h-4 w-4"
+                              style={{ color: getStatusColor(anime.users[user].status) }}
+                            />
+                          </motion.span>
+                        ) : (
+                          <motion.span
+                            className="h-3 w-3 rounded-full"
+                            style={{ backgroundColor: getStatusColor(anime.users[user].status) }}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 0.4 + index * 0.1, type: 'spring' as const }}
+                          />
+                        )}
                         <span className="text-zinc-200">{STATUS_LABELS[anime.users[user].status]}</span>
                         <span className="text-zinc-500 text-sm">
                           {anime.users[user].episodesWatched.length}/{anime.episodes} episodes

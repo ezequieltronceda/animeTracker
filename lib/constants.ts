@@ -30,7 +30,7 @@ export const STATUS_LABELS: Record<string, string> = {
   terminado: 'Terminado',
   pendiente: 'Pendiente',
   dropeado: 'Dropeado',
-  ni_en_un_millon: 'Ni en un millón',
+  ni_en_un_millon: 'Pedilo',
 };
 
 export const DAYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as const;
