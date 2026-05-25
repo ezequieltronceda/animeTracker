@@ -243,6 +243,19 @@
   box-shadow: 0 0 14px color-mix(in oklch, var(--cg-user, #a78bfa) 40%, transparent);
 }
 
+/* Respect the OS-level reduced-motion preference. Disables loops, neutralises
+   transitions and entry animations. Standard a11y "nuclear option" rule. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(1 0 0);

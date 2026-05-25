@@ -85,7 +85,8 @@ export function Header({
         className="sticky top-0 z-30"
         style={{
           background: 'rgba(10,10,12,.85)',
-          backdropFilter: 'blur(16px)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
           borderBottom: '1px solid rgba(255,255,255,.05)',
         }}
       >

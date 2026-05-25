@@ -177,6 +177,7 @@ export function AnimeDetail({
       style={{
         background: 'rgba(0,0,0,.7)',
         backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
         pointerEvents: isClosing ? 'none' : 'auto',
       }}
       initial={{ opacity: 0 }}
@@ -219,7 +220,7 @@ export function AnimeDetail({
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     transform: 'scale(1.15)',
-                    filter: 'blur(20px) saturate(1.1)',
+                    filter: 'blur(12px) saturate(1.05)',
                   }}
                 />
               ) : (
