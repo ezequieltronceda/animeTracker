@@ -1,31 +1,51 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { getDocs, collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { getDb } from '@/lib/firebase-admin';
+import { requireAuth } from '@/lib/require-auth';
+import { rateLimit } from '@/lib/rate-limit';
+import {
+  invalidateSeasonCache,
+  isEpisodeArray,
+  isFiniteNonNegativeInt,
+  isKnownSeasonId,
+  isValidDay,
+  isValidStatus,
+  isValidUser,
+} from '@/lib/api-validation';
+
+// Factory — DO NOT cache a NextResponse instance, its body stream is consumed
+// on the first response and subsequent uses yield empty bodies.
+const generic500 = () =>
+  NextResponse.json({ error: 'Internal error' }, { status: 500 });
 
 async function fetchJikanScore(malId: number): Promise<number | undefined> {
   try {
-    const res = await fetch(`https://api.jikan.moe/v4/anime/${malId}`, { next: { revalidate: 3600 } });
+    const res = await fetch(`https://api.jikan.moe/v4/anime/${malId}`, {
+      next: { revalidate: 3600 },
+    });
     const data = await res.json();
     return data.data?.score;
   } catch (e) {
-    console.error('Error fetching score:', e);
+    console.error('[api/anime] Jikan score fetch failed:', e);
     return undefined;
   }
 }
 
 export async function GET(request: Request) {
+  const unauth = await requireAuth();
+  if (unauth) return unauth;
+
   const { searchParams } = new URL(request.url);
   const seasonId = searchParams.get('season');
 
   try {
-    const seasonsRef = collection(db, 'seasons');
-    const seasonsSnapshot = await getDocs(seasonsRef);
-    
-    const seasons = seasonsSnapshot.docs.map(doc => {
-      const data = doc.data();
+    const db = getDb();
+    const seasonsSnap = await db.collection('seasons').get();
+
+    const seasons = seasonsSnap.docs.map((d) => {
+      const data = d.data();
       return {
-        id: data.collectionId || doc.id,
-        name: data.name || doc.id,
+        id: (data.collectionId as string) || d.id,
+        name: (data.name as string) || d.id,
       };
     });
 
@@ -33,266 +53,312 @@ export async function GET(request: Request) {
       return NextResponse.json({ seasons, animes: [] });
     }
 
-    const animesRef = collection(db, seasonId);
-    const animesSnapshot = await getDocs(animesRef);
-    
-    const animes = await Promise.all(animesSnapshot.docs.map(async (d) => {
-      const data = d.data();
-      let score = data.score;
-      
-      if (!score && data.malId) {
-        score = await fetchJikanScore(data.malId);
-        if (score) {
-          const animeRef = doc(db, seasonId, d.id);
-          await updateDoc(animeRef, { score });
+    if (!(await isKnownSeasonId(seasonId))) {
+      return NextResponse.json({ error: 'Invalid season' }, { status: 400 });
+    }
+
+    const animesSnap = await db.collection(seasonId).get();
+
+    const animes = await Promise.all(
+      animesSnap.docs.map(async (d) => {
+        const data = d.data();
+        let score = data.score;
+
+        if (!score && data.malId) {
+          score = await fetchJikanScore(data.malId);
+          if (score) {
+            await db.collection(seasonId).doc(d.id).update({ score });
+          }
         }
-      }
-      
-      return {
-        id: d.id,
-        seasonId,
-        ...data,
-        score,
-      };
-    }));
+
+        return {
+          id: d.id,
+          seasonId,
+          ...data,
+          score,
+        };
+      }),
+    );
 
     return NextResponse.json({ seasons, animes });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error:', error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[api/anime] GET failed:', error);
+    return generic500();
   }
 }
 
 export async function POST(request: Request) {
+  const unauth = await requireAuth();
+  if (unauth) return unauth;
+
   try {
     const body = await request.json();
-    const { action, name, malId, day, seasonId } = body;
+    const { action, name, malId, day, seasonId } = body ?? {};
+    const db = getDb();
 
     if (action === 'createSeason') {
-      if (!name) {
-        return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+      if (typeof name !== 'string' || name.length === 0 || name.length > 80) {
+        return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
+      }
+      const collectionId = name.toLowerCase().replace(/\s+/g, '_');
+      if (!/^[a-z0-9_]{1,80}$/.test(collectionId)) {
+        return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
       }
 
-      const collectionId = name.toLowerCase().replace(/\s+/g, '_');
-      
-      const seasonsRef = collection(db, 'seasons');
-      await addDoc(seasonsRef, {
+      await db.collection('seasons').add({
         name,
         collectionId,
         createdAt: new Date(),
       });
+      invalidateSeasonCache();
 
       return NextResponse.json({ id: collectionId, name, collectionId });
     }
 
     if (action === 'createAnime') {
-      if (!malId || !seasonId) {
-        return NextResponse.json({ error: 'MAL ID and season are required' }, { status: 400 });
+      if (!isFiniteNonNegativeInt(malId)) {
+        return NextResponse.json({ error: 'Invalid malId' }, { status: 400 });
+      }
+      if (!(await isKnownSeasonId(seasonId))) {
+        return NextResponse.json({ error: 'Invalid season' }, { status: 400 });
+      }
+      if (!isValidDay(day)) {
+        return NextResponse.json({ error: 'Invalid day' }, { status: 400 });
       }
 
-      const jikanResponse = await fetch(`https://api.jikan.moe/v4/anime/${malId}`);
+      const jikanResponse = await fetch(
+        `https://api.jikan.moe/v4/anime/${malId}`,
+      );
       if (!jikanResponse.ok) {
-        throw new Error('Failed to fetch from Jikan');
+        return NextResponse.json(
+          { error: 'Jikan lookup failed' },
+          { status: 502 },
+        );
       }
       const jikanData = await jikanResponse.json();
       const animeData = jikanData.data;
 
-      const seasonRef = collection(db, seasonId);
-      const existingDocs = await getDocs(seasonRef);
-      const nextOrder = existingDocs.size + 1;
+      const existing = await db.collection(seasonId).get();
+      const nextOrder = existing.size + 1;
 
       const animeDoc = {
         malId: animeData.mal_id,
         jikanUrl: animeData.url || null,
         title: animeData.title_english || animeData.title,
         titleJp: animeData.title_japanese || null,
-        imageUrl: animeData.images?.jpg?.large_image_url || animeData.images?.jpg?.image_url || null,
+        imageUrl:
+          animeData.images?.jpg?.large_image_url ||
+          animeData.images?.jpg?.image_url ||
+          null,
         day,
         order: nextOrder,
         episodes: animeData.episodes || 0,
         synopsis: animeData.synopsis || null,
-        genres: Array.isArray(animeData.genres) ? animeData.genres.map((g: { name: string }) => g.name) : [],
+        genres: Array.isArray(animeData.genres)
+          ? animeData.genres.map((g: { name: string }) => g.name)
+          : [],
         users: {
-          eze: {
-            status: 'pendiente',
-            episodesWatched: [],
-          },
-          pancho: {
-            status: 'pendiente',
-            episodesWatched: [],
-          },
+          eze: { status: 'pendiente', episodesWatched: [] },
+          pancho: { status: 'pendiente', episodesWatched: [] },
         },
         createdAt: new Date(),
       };
 
-      const docRef = await addDoc(seasonRef, animeDoc);
-
+      const docRef = await db.collection(seasonId).add(animeDoc);
       return NextResponse.json({ id: docRef.id, seasonId, ...animeDoc });
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error:', error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[api/anime] POST failed:', error);
+    return generic500();
   }
 }
 
 export async function PUT(request: Request) {
+  const unauth = await requireAuth();
+  if (unauth) return unauth;
+
   try {
     const body = await request.json();
-    const { id, seasonId, user, status, episodesWatched, day, maxEpisodes } = body;
+    const { id, seasonId, user, status, episodesWatched, day, maxEpisodes } =
+      body ?? {};
 
-    if (!id || !seasonId) {
-      return NextResponse.json({ error: 'ID and seasonId are required' }, { status: 400 });
+    if (typeof id !== 'string' || id.length === 0 || id.length > 100) {
+      return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
+    }
+    if (!(await isKnownSeasonId(seasonId))) {
+      return NextResponse.json({ error: 'Invalid season' }, { status: 400 });
     }
 
-          const updateData: Record<string, unknown> = {};
+    const updateData: Record<string, unknown> = {};
 
     if (maxEpisodes !== undefined) {
+      if (!isFiniteNonNegativeInt(maxEpisodes)) {
+        return NextResponse.json(
+          { error: 'Invalid maxEpisodes' },
+          { status: 400 },
+        );
+      }
       updateData.maxEpisodes = maxEpisodes;
     }
 
-    if (user) {
+    if (user !== undefined) {
+      if (!isValidUser(user)) {
+        return NextResponse.json({ error: 'Invalid user' }, { status: 400 });
+      }
       if (status !== undefined) {
+        if (!isValidStatus(status)) {
+          return NextResponse.json(
+            { error: 'Invalid status' },
+            { status: 400 },
+          );
+        }
         updateData[`users.${user}.status`] = status;
       }
       if (episodesWatched !== undefined) {
+        if (!isEpisodeArray(episodesWatched)) {
+          return NextResponse.json(
+            { error: 'Invalid episodesWatched' },
+            { status: 400 },
+          );
+        }
         updateData[`users.${user}.episodesWatched`] = episodesWatched;
       }
     }
 
     if (day !== undefined) {
+      if (!isValidDay(day)) {
+        return NextResponse.json({ error: 'Invalid day' }, { status: 400 });
+      }
       updateData.day = day;
     }
 
-    const animeRef = doc(db, seasonId, id);
-    await updateDoc(animeRef, updateData);
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { error: 'No valid fields to update' },
+        { status: 400 },
+      );
+    }
 
+    await getDb().collection(seasonId as string).doc(id).update(updateData);
     return NextResponse.json({ success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error updating anime:', error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[api/anime] PUT failed:', error);
+    return generic500();
   }
 }
 
 export async function DELETE(request: Request) {
+  const unauth = await requireAuth();
+  if (unauth) return unauth;
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
   const seasonId = searchParams.get('seasonId');
 
-  if (!id || !seasonId) {
-    return NextResponse.json({ error: 'ID and seasonId are required' }, { status: 400 });
+  if (typeof id !== 'string' || id.length === 0 || id.length > 100) {
+    return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
+  if (!(await isKnownSeasonId(seasonId))) {
+    return NextResponse.json({ error: 'Invalid season' }, { status: 400 });
+  }
+  const seasonIdStr = seasonId as string;
 
   try {
-    const animeRef = doc(db, seasonId, id);
-    await deleteDoc(animeRef);
-
+    await getDb().collection(seasonIdStr).doc(id).delete();
     return NextResponse.json({ success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error deleting anime:', error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[api/anime] DELETE failed:', error);
+    return generic500();
   }
 }
 
 export async function PATCH(request: Request) {
+  const unauth = await requireAuth();
+  if (unauth) return unauth;
+
+  const rl = await rateLimit('anime:refreshAll', {
+    limit: 1,
+    windowMs: 60_000,
+  });
+  if (rl) return rl;
+
   try {
     const body = await request.json();
-    const { action, seasonId } = body;
+    const { action, seasonId } = body ?? {};
 
     if (action === 'refreshAll') {
-      if (!seasonId) {
-        return NextResponse.json({ error: 'Season ID is required' }, { status: 400 });
+      if (!(await isKnownSeasonId(seasonId))) {
+        return NextResponse.json({ error: 'Invalid season' }, { status: 400 });
       }
 
-      const animesRef = collection(db, seasonId);
-      const animesSnapshot = await getDocs(animesRef);
-      
+      const db = getDb();
+      const animesSnap = await db.collection(seasonId).get();
+
       let updated = 0;
       let failed = 0;
 
-      for (const d of animesSnapshot.docs) {
+      for (const d of animesSnap.docs) {
         const data = d.data();
-        
-        if (!data.malId) {
-          continue;
-        }
+        if (!data.malId) continue;
 
         try {
-          const res = await fetch(`https://api.jikan.moe/v4/anime/${data.malId}`, { 
-            next: { revalidate: 0 } 
-          });
-          
+          const res = await fetch(
+            `https://api.jikan.moe/v4/anime/${data.malId}`,
+            { next: { revalidate: 0 } },
+          );
           if (!res.ok) {
             failed++;
             continue;
           }
-
           const jikanData = await res.json();
           const animeData = jikanData.data;
-
           if (!animeData) {
             failed++;
             continue;
           }
 
-    const updateData: Record<string, unknown> = {};
-          
-          if (animeData.score) {
-            updateData.score = animeData.score;
-          }
-          if (animeData.episodes && animeData.episodes > 0) {
+          const updateData: Record<string, unknown> = {};
+          if (animeData.score) updateData.score = animeData.score;
+          if (animeData.episodes && animeData.episodes > 0)
             updateData.episodes = animeData.episodes;
-          }
-          if (animeData.images?.jpg?.image_url) {
+          if (animeData.images?.jpg?.image_url)
             updateData.imageUrl = animeData.images.jpg.image_url;
-          }
-          if (animeData.title) {
-            updateData.title = animeData.title;
-          }
-          if (animeData.url) {
-            updateData.jikanUrl = animeData.url;
-          }
-          if (animeData.title_japanese) {
+          if (animeData.title) updateData.title = animeData.title;
+          if (animeData.url) updateData.jikanUrl = animeData.url;
+          if (animeData.title_japanese)
             updateData.titleJp = animeData.title_japanese;
-          }
-          if (animeData.synopsis) {
-            updateData.synopsis = animeData.synopsis;
-          }
+          if (animeData.synopsis) updateData.synopsis = animeData.synopsis;
           if (Array.isArray(animeData.genres)) {
-            updateData.genres = animeData.genres.map((g: { name: string }) => g.name);
+            updateData.genres = animeData.genres.map(
+              (g: { name: string }) => g.name,
+            );
           }
 
           if (Object.keys(updateData).length > 0) {
-            const animeRef = doc(db, seasonId, d.id);
-            await updateDoc(animeRef, updateData);
+            await db.collection(seasonId).doc(d.id).update(updateData);
             updated++;
           }
 
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         } catch (e) {
-          console.error(`Error updating anime ${d.id}:`, e);
+          console.error(`[api/anime] refresh ${d.id} failed:`, e);
           failed++;
         }
       }
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         updated,
         failed,
-        total: animesSnapshot.size 
+        total: animesSnap.size,
       });
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error in PATCH:', error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[api/anime] PATCH failed:', error);
+    return generic500();
   }
 }

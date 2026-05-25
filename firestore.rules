@@ -1,0 +1,18 @@
+rules_version = '2';
+
+// Lock the database down: all client reads/writes are blocked. Every operation
+// must go through the Next.js API routes which authenticate via the session
+// cookie and validate input.
+//
+// The client SDK in `lib/firebase.ts` is used server-side from API routes only.
+// Firestore can't tell server-from-client SDK without Admin credentials, so
+// this rule forces ALL traffic to go through the server. If you ever need
+// browser reads, migrate the API to firebase-admin and keep these rules.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

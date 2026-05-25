@@ -24,17 +24,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
-const ACCENT = '#6366f1';
-
-const DAY_LABELS: Record<string, string> = {
-  lunes: 'Lunes',
-  martes: 'Martes',
-  miercoles: 'Miércoles',
-  jueves: 'Jueves',
-  viernes: 'Viernes',
-  sabado: 'Sábado',
-  domingo: 'Domingo',
-};
+import { Avatar } from '@/components/anime-grid/_internal/avatar';
+import { ACCENT, DAY_LABELS } from '@/lib/anime-constants';
 
 interface HeaderProps {
   onAddClick: () => void;
@@ -124,8 +115,8 @@ export function Header({
 
           <div className="flex items-center gap-2">
             <div className="hidden items-center gap-1.5 sm:flex">
-              <UserAvatar user="eze" />
-              <UserAvatar user="pancho" />
+              <Avatar user="eze" size={26} />
+              <Avatar user="pancho" size={26} />
             </div>
 
             {editMode && onRefreshJikan && (
@@ -228,22 +219,6 @@ export function Header({
         </DialogContent>
       </Dialog>
     </>
-  );
-}
-
-function UserAvatar({ user }: { user: 'eze' | 'pancho' }) {
-  const color = user === 'eze' ? '#22c55e' : '#a78bfa';
-  const initial = user === 'eze' ? 'E' : 'P';
-  return (
-    <span
-      className="flex h-[26px] w-[26px] items-center justify-center rounded-full text-[11px] font-bold text-[#0a0a0b]"
-      style={{
-        background: `linear-gradient(135deg, ${color}, color-mix(in oklch, ${color} 60%, #000))`,
-        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.18)',
-      }}
-    >
-      {initial}
-    </span>
   );
 }
 
@@ -429,7 +404,7 @@ function DayPills({
 
   const items: { id: string | null; label: string }[] = [
     { id: null, label: 'Todos los días' },
-    ...DAYS.map((d) => ({ id: d, label: DAY_LABELS[d] ?? d })),
+    ...DAYS.map((d) => ({ id: d, label: DAY_LABELS[d]?.full ?? d })),
   ];
 
   useLayoutEffect(() => {

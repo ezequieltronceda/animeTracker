@@ -1,96 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChevronDown, ExternalLink, Pencil, Play, Star, Trash2 } from 'lucide-react';
-import { COLORS, DAYS, STATUS_LABELS } from '@/lib/constants';
+import { ExternalLink, Pencil, Play, Star, Trash2 } from 'lucide-react';
+import { STATUS_LABELS } from '@/lib/constants';
+import { ACCENT, DAY_LABELS, STATUS_SOFT, USERS } from '@/lib/anime-constants';
 import { toJKAnimeSlug, upgradeMalImage } from '@/lib/utils';
+import { useLowPowerMode } from '@/hooks/use-low-power-mode';
 import { PaginatedEpisodeGrid, nextUnwatched } from './episode-grid';
+import { Avatar } from './_internal/avatar';
+import { ProgressBar } from './_internal/progress-bar';
+import { DayPicker } from './_internal/day-picker';
+import { StatusSelect } from './_internal/status-select';
 import type { Anime, User, UserStatus } from '@/types';
-
-const ACCENT = '#6366f1';
-
-const USERS = {
-  eze: { name: 'Eze', initial: 'E', color: '#22c55e' },
-  pancho: { name: 'Pancho', initial: 'P', color: '#a78bfa' },
-} as const;
-
-const DAY_LABELS: Record<string, { short: string; full: string }> = {
-  lunes: { short: 'Lun', full: 'Lunes' },
-  martes: { short: 'Mar', full: 'Martes' },
-  miercoles: { short: 'Mié', full: 'Miércoles' },
-  jueves: { short: 'Jue', full: 'Jueves' },
-  viernes: { short: 'Vie', full: 'Viernes' },
-  sabado: { short: 'Sáb', full: 'Sábado' },
-  domingo: { short: 'Dom', full: 'Domingo' },
-};
-
-const STATUS_SOFT: Record<UserStatus, { soft: string; text: string }> = {
-  viendo: { soft: 'rgba(34,197,94,.12)', text: '#86efac' },
-  en_pausa: { soft: 'rgba(234,179,8,.12)', text: '#fde68a' },
-  terminado: { soft: 'rgba(99,102,241,.14)', text: '#a5b4fc' },
-  pendiente: { soft: 'rgba(113,113,122,.16)', text: '#a1a1aa' },
-  dropeado: { soft: 'rgba(239,68,68,.12)', text: '#fca5a5' },
-  ni_en_un_millon: { soft: 'rgba(82,82,91,.16)', text: '#71717a' },
-};
 
 function hashHue(seed: string): number {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   return h % 360;
-}
-
-function Avatar({ user, size = 22 }: { user: User; size?: number }) {
-  const u = USERS[user];
-  return (
-    <span
-      style={{
-        width: size,
-        height: size,
-        borderRadius: 999,
-        background: `linear-gradient(135deg, ${u.color}, color-mix(in oklch, ${u.color} 60%, #000))`,
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: size * 0.45,
-        fontWeight: 700,
-        color: '#0a0a0b',
-        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.18)',
-        flexShrink: 0,
-      }}
-    >
-      {u.initial}
-    </span>
-  );
-}
-
-function ProgressBar({
-  value,
-  max,
-  color,
-  dim,
-}: {
-  value: number;
-  max: number;
-  color: string;
-  dim: boolean;
-}) {
-  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
-  return (
-    <div className="flex min-w-0 flex-1 items-center gap-2">
-      <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[.07]">
-        <div
-          className="h-full rounded-full"
-          style={{
-            width: `${pct}%`,
-            background: dim ? 'rgba(255,255,255,.18)' : color,
-            transition:
-              'width .55s cubic-bezier(.22,.61,.36,1), background .25s ease',
-            boxShadow: dim ? 'none' : `0 0 8px ${color}55`,
-          }}
-        />
-      </div>
-    </div>
-  );
 }
 
 function CoverPlaceholder({
@@ -126,133 +52,6 @@ function CoverPlaceholder({
   );
 }
 
-function DayPicker({
-  value,
-  onChange,
-}: {
-  value?: string;
-  onChange: (day: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    if (!open) return;
-    const close = () => setOpen(false);
-    window.addEventListener('click', close);
-    return () => window.removeEventListener('click', close);
-  }, [open]);
-  const label = value && DAY_LABELS[value] ? DAY_LABELS[value].short : '—';
-  return (
-    <div className="relative" onClick={(e) => e.stopPropagation()}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.6px] text-white/90 backdrop-blur-sm"
-        style={{
-          background: 'rgba(0,0,0,.55)',
-          borderStyle: 'dashed',
-          borderColor: `${ACCENT}88`,
-        }}
-      >
-        {label}
-        <ChevronDown className="h-2.5 w-2.5 opacity-60" />
-      </button>
-      {open && (
-        <div
-          className="absolute left-0 top-full z-50 mt-1 min-w-[130px] rounded-md border p-1"
-          style={{
-            background: '#18181b',
-            borderColor: 'rgba(255,255,255,.1)',
-            boxShadow: '0 12px 32px -8px rgba(0,0,0,.7)',
-          }}
-        >
-          {DAYS.map((d) => (
-            <button
-              key={d}
-              onClick={() => {
-                onChange(d);
-                setOpen(false);
-              }}
-              className="block w-full rounded px-2.5 py-1.5 text-left text-[11.5px] capitalize text-white/85 hover:bg-white/5"
-              style={{
-                background: value === d ? 'rgba(255,255,255,.06)' : 'transparent',
-              }}
-            >
-              {DAY_LABELS[d].full}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StatusSelect({
-  value,
-  onChange,
-}: {
-  value: UserStatus;
-  onChange: (s: UserStatus) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    if (!open) return;
-    const close = () => setOpen(false);
-    window.addEventListener('click', close);
-    return () => window.removeEventListener('click', close);
-  }, [open]);
-  const meta = STATUS_SOFT[value];
-  return (
-    <div className="relative" onClick={(e) => e.stopPropagation()}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1.5 rounded-md border px-2 py-[3px] text-[11px] font-medium"
-        style={{
-          background: meta.soft,
-          borderColor: meta.soft,
-          color: meta.text,
-        }}
-      >
-        <span
-          className="h-1.5 w-1.5 rounded-full"
-          style={{ background: COLORS.status[value as keyof typeof COLORS.status] }}
-        />
-        {STATUS_LABELS[value]}
-        <ChevronDown className="h-2.5 w-2.5 opacity-60" />
-      </button>
-      {open && (
-        <div
-          className="absolute left-0 top-full z-50 mt-1 min-w-[150px] rounded-md border p-1"
-          style={{
-            background: '#18181b',
-            borderColor: 'rgba(255,255,255,.1)',
-            boxShadow: '0 12px 32px -8px rgba(0,0,0,.7)',
-          }}
-        >
-          {(Object.entries(STATUS_LABELS) as [UserStatus, string][]).map(([k, label]) => (
-            <button
-              key={k}
-              onClick={() => {
-                onChange(k);
-                setOpen(false);
-              }}
-              className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-[11.5px] hover:bg-white/5"
-              style={{
-                background: value === k ? 'rgba(255,255,255,.06)' : 'transparent',
-                color: STATUS_SOFT[k].text,
-              }}
-            >
-              <span
-                className="h-1.5 w-1.5 rounded-full"
-                style={{ background: COLORS.status[k as keyof typeof COLORS.status] }}
-              />
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 interface EditMenuProps {
   episodes: number;
   onEpisodesChange: (n: number) => void;
@@ -281,9 +80,9 @@ function EditMenu({ episodes, onEpisodesChange, onDelete }: EditMenuProps) {
           e.stopPropagation();
           setOpen((o) => !o);
         }}
-        className="flex h-[26px] w-[26px] items-center justify-center rounded-md border text-sm leading-none text-white backdrop-blur-sm"
+        className="flex h-[26px] w-[26px] items-center justify-center rounded-md border text-sm leading-none text-white"
         style={{
-          background: 'rgba(0,0,0,.55)',
+          background: 'rgba(10,10,12,.78)',
           borderColor: 'rgba(255,255,255,.1)',
         }}
         aria-label="Más opciones"
@@ -468,6 +267,7 @@ export function AnimeCard({
   onDelete,
 }: AnimeCardProps) {
   const [hovering, setHovering] = useState(false);
+  const lowPower = useLowPowerMode();
 
   const ezeWatchedSet = new Set(ezeEpisodes);
   const panchoWatchedSet = new Set(panchoEpisodes);
@@ -494,7 +294,7 @@ export function AnimeCard({
         background: 'rgba(255,255,255,.025)',
         borderColor: hovering ? `${ACCENT}44` : 'rgba(255,255,255,.06)',
         transition:
-          'border-color .2s ease, transform .25s cubic-bezier(.22,.61,.36,1), box-shadow .25s ease',
+          'border-color .2s ease, transform .25s cubic-bezier(.22,.61,.36,1)',
         transform: hovering ? 'translateY(-3px)' : 'none',
         boxShadow: hovering
           ? `0 22px 44px -20px rgba(0,0,0,.75), 0 0 0 1px ${ACCENT}33`
@@ -509,7 +309,7 @@ export function AnimeCard({
         <div
           className="absolute inset-0"
           style={{
-            transform: hovering ? 'scale(1.06)' : 'scale(1)',
+            transform: hovering && !lowPower ? 'scale(1.06)' : 'scale(1)',
             transition: 'transform .55s cubic-bezier(.22,.61,.36,1)',
           }}
         >
@@ -542,7 +342,7 @@ export function AnimeCard({
           }}
         />
 
-        {hovering && (
+        {hovering && !lowPower && (
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div
               className="absolute bottom-0 top-0"
@@ -561,9 +361,9 @@ export function AnimeCard({
             <DayPicker value={anime.day} onChange={onDayChange} />
           ) : (
             <span
-              className="rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.6px] text-white/90 backdrop-blur-sm"
+              className="rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.6px] text-white/90"
               style={{
-                background: 'rgba(0,0,0,.55)',
+                background: 'rgba(10,10,12,.78)',
                 borderColor: 'rgba(255,255,255,.1)',
               }}
             >
@@ -574,9 +374,9 @@ export function AnimeCard({
           <div className="flex items-center gap-1.5">
             {anime.score ? (
               <span
-                className="inline-flex items-center gap-[3px] rounded-md border px-2 py-1 text-[11px] font-bold text-amber-300 backdrop-blur-sm"
+                className="inline-flex items-center gap-[3px] rounded-md border px-2 py-1 text-[11px] font-bold text-amber-300"
                 style={{
-                  background: 'rgba(0,0,0,.55)',
+                  background: 'rgba(10,10,12,.78)',
                   borderColor: 'rgba(255,255,255,.1)',
                 }}
               >
@@ -596,10 +396,10 @@ export function AnimeCard({
 
         {synced && !editMode && (
           <div
-            className="absolute left-2.5 inline-flex items-center gap-1.5 rounded-full border px-2 py-[3px] text-[10px] font-bold uppercase tracking-[0.4px] text-emerald-300 backdrop-blur-sm"
+            className="absolute left-2.5 inline-flex items-center gap-1.5 rounded-full border px-2 py-[3px] text-[10px] font-bold uppercase tracking-[0.4px] text-emerald-300"
             style={{
               top: 44,
-              background: 'rgba(34,197,94,.22)',
+              background: 'rgba(20,40,28,.85)',
               borderColor: 'rgba(34,197,94,.4)',
               animation: 'cgFadeUp .35s cubic-bezier(.22,.61,.36,1) both',
             }}

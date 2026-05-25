@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-const ACCENT = '#6366f1';
+import { useLowPowerMode } from '@/hooks/use-low-power-mode';
+import { ACCENT } from '@/lib/anime-constants';
 
 export function AmbientBackground() {
   // Pause the drifting blobs while the tab is in the background. Firefox
@@ -10,6 +10,8 @@ export function AmbientBackground() {
   // and these are the most expensive elements on the page (large blurred
   // layers under continuous transform animations).
   const [paused, setPaused] = useState(false);
+  const lowPower = useLowPowerMode();
+
   useEffect(() => {
     const sync = () => setPaused(document.hidden);
     sync();
@@ -32,10 +34,10 @@ export function AmbientBackground() {
           width: 600,
           height: 600,
           background: `radial-gradient(circle, ${ACCENT}33, transparent 60%)`,
-          filter: 'blur(40px)',
-          animation: 'cgDrift1 22s ease-in-out infinite',
+          filter: `blur(${lowPower ? 24 : 40}px)`,
+          animation: lowPower ? 'none' : 'cgDrift1 22s ease-in-out infinite',
           animationPlayState: playState,
-          willChange: 'transform',
+          willChange: lowPower ? 'auto' : 'transform',
           transform: 'translateZ(0)',
         }}
       />
@@ -47,10 +49,10 @@ export function AmbientBackground() {
           width: 700,
           height: 700,
           background: `radial-gradient(circle, color-mix(in oklch, ${ACCENT} 60%, #ec4899)22, transparent 60%)`,
-          filter: 'blur(50px)',
-          animation: 'cgDrift2 28s ease-in-out infinite',
+          filter: `blur(${lowPower ? 24 : 50}px)`,
+          animation: lowPower ? 'none' : 'cgDrift2 28s ease-in-out infinite',
           animationPlayState: playState,
-          willChange: 'transform',
+          willChange: lowPower ? 'auto' : 'transform',
           transform: 'translateZ(0)',
         }}
       />

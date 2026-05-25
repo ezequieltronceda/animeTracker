@@ -9,9 +9,9 @@ import { AnimeCard } from './anime-card';
 import { AnimeDetail } from './anime-detail';
 import { SectionHeader } from './section-header';
 import { nextUnwatched } from './episode-grid';
+import { useLowPowerMode } from '@/hooks/use-low-power-mode';
+import { ACCENT } from '@/lib/anime-constants';
 import type { Anime, Season, User, UserStatus } from '@/types';
-
-const ACCENT = '#6366f1';
 
 interface PendingChanges {
   episodesWatched?: { [user in User]?: number[] };
@@ -48,6 +48,7 @@ export function AnimeGrid({
   const searchParams = useSearchParams();
   const selectedAnimeId = searchParams.get('anime');
   const pushedHistoryRef = useRef(false);
+  const lowPower = useLowPowerMode();
 
   const openDetail = useCallback(
     (id: string) => {
@@ -246,15 +247,26 @@ export function AnimeGrid({
           <div
             key={`grid-${season?.id ?? 'none'}-${dayFilter ?? 'all'}`}
             className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+            style={
+              lowPower
+                ? {
+                    animation: 'cgFadeIn .2s ease both',
+                  }
+                : undefined
+            }
           >
             {filtered.map((a, i) => (
               <div
                 key={a.id}
-                style={{
-                  animation:
-                    'cgCardIn .5s cubic-bezier(.22,.61,.36,1) both',
-                  animationDelay: `${Math.min(i * 45, 600)}ms`,
-                }}
+                style={
+                  lowPower
+                    ? undefined
+                    : {
+                        animation:
+                          'cgCardIn .5s cubic-bezier(.22,.61,.36,1) both',
+                        animationDelay: `${Math.min(i * 45, 600)}ms`,
+                      }
+                }
               >
                 <AnimeCard
                   anime={a}

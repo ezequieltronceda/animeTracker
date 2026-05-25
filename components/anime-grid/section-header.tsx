@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import { formatSeasonName } from '@/lib/constants';
+import { useLowPowerMode } from '@/hooks/use-low-power-mode';
+import { ACCENT } from '@/lib/anime-constants';
 import type { Anime, Season } from '@/types';
 
-const ACCENT = '#6366f1';
-
 function AnimNumber({ value, duration = 600 }: { value: number; duration?: number }) {
+  const lowPower = useLowPowerMode();
   const [display, setDisplay] = useState(value);
   const fromRef = useRef(value);
   const startRef = useRef<number>(0);
@@ -16,6 +17,13 @@ function AnimNumber({ value, duration = 600 }: { value: number; duration?: numbe
 
   useEffect(() => {
     if (value === targetRef.current) return;
+    if (lowPower) {
+      // Snap to the target instead of rAF-tweening; saves continuous re-renders
+      // on modest machines.
+      targetRef.current = value;
+      setDisplay(value);
+      return;
+    }
     fromRef.current = display;
     targetRef.current = value;
     startRef.current = performance.now();
@@ -30,7 +38,7 @@ function AnimNumber({ value, duration = 600 }: { value: number; duration?: numbe
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, duration]);
+  }, [value, duration, lowPower]);
 
   return <span style={{ fontFamily: 'var(--font-geist-mono), ui-monospace, monospace', color: '#fafafa', fontWeight: 600 }}>{Math.round(display)}</span>;
 }
