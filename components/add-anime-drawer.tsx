@@ -60,13 +60,21 @@ export function AddAnimeDrawer({ open, onClose, onAdd, seasonId }: AddAnimeDrawe
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to add anime');
-      
+      // Surface the server's actual error (e.g. "Invalid malId" / "Invalid
+      // season" / "Invalid day" / "Jikan lookup failed") instead of a generic
+      // message, so a failed add is self-diagnosable.
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || 'Error al agregar anime');
+        setLoading(false);
+        return;
+      }
+
       setMalId('');
       setDay('');
       onClose();
       onAdd();
-    } catch (err) {
+    } catch {
       setError('Error al agregar anime');
     } finally {
       setLoading(false);
