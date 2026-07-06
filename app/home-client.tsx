@@ -202,6 +202,28 @@ export default function HomeClient() {
     setDeleteConfirm({ show: false });
   };
 
+  const handleCarryOver = (anime: Anime, targetSeasonId: string) => {
+    fetch('/api/anime', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'carryOver',
+        id: anime.id,
+        seasonId: anime.seasonId,
+        targetSeasonId,
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('carryover failed');
+        // The series left this season: drop it from the current view and clear
+        // any staged (unsaved) edits pointing at its now-stale id. We stay in
+        // the current season so the user can keep moving series.
+        setAnimes((prev) => prev.filter((a) => a.id !== anime.id));
+        clearPendingChanges(anime.id);
+      })
+      .catch((err) => console.error('Error moving anime:', err));
+  };
+
   const handleRefreshJikan = async () => {
     if (!selectedSeason) return;
     
@@ -325,8 +347,10 @@ export default function HomeClient() {
               <AnimeGrid
                 animes={animes}
                 season={selectedSeason}
+                otherSeasons={seasons.filter((s) => s.id !== selectedSeason?.id)}
                 onSaveChanges={handleSaveChanges}
                 onDeleteAnime={handleDeleteClick}
+                onCarryOver={handleCarryOver}
                 onAddAnime={openDrawer}
                 savedFlash={savedFlash}
               />

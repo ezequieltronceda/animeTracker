@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import {
   Check,
   ExternalLink,
+  FolderInput,
   Play,
   Star,
   Trash2,
@@ -15,7 +16,7 @@ import { STATUS_LABELS } from '@/lib/constants';
 import { ACCENT, DAY_LABELS, STATUS_SOFT, USERS } from '@/lib/anime-constants';
 import { toJKAnimeSlug, upgradeMalImage } from '@/lib/utils';
 import { useLowPowerMode } from '@/hooks/use-low-power-mode';
-import type { Anime, SeiyuuId, User, UserStatus } from '@/types';
+import type { Anime, Season, SeiyuuId, User, UserStatus } from '@/types';
 import { PaginatedEpisodeGrid, nextUnwatched } from './episode-grid';
 import { Avatar } from './_internal/avatar';
 import { ProgressBar } from './_internal/progress-bar';
@@ -44,6 +45,8 @@ interface AnimeDetailProps {
   onEpisodesChange: (n: number) => void;
   onMarkNext: (user: User) => void;
   onDelete: () => void;
+  otherSeasons: Season[];
+  onCarryOver: (targetSeasonId: string) => void;
 }
 
 export function AnimeDetail({
@@ -63,9 +66,13 @@ export function AnimeDetail({
   onEpisodesChange,
   onMarkNext,
   onDelete,
+  otherSeasons,
+  onCarryOver,
 }: AnimeDetailProps) {
   const [scrollY, setScrollY] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [carryOpen, setCarryOpen] = useState(false);
+  const [carryTarget, setCarryTarget] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -137,8 +144,9 @@ export function AnimeDetail({
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setScrollY(0);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setConfirmDelete(false);
+    setCarryOpen(false);
+    setCarryTarget(null);
   }, [anime.id]);
 
   const progress = easeOut(Math.min(1, scrollY / 320));
@@ -281,6 +289,19 @@ export function AnimeDetail({
             </div>
 
             <div className="absolute right-3.5 top-3 z-[3] flex gap-2">
+              {editMode && otherSeasons.length > 0 && (
+                <button
+                  onClick={() => setCarryOpen(true)}
+                  title="Mover a otra temporada"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border text-indigo-300"
+                  style={{
+                    background: 'rgba(0,0,0,.5)',
+                    borderColor: 'rgba(255,255,255,.1)',
+                  }}
+                >
+                  <FolderInput className="h-3.5 w-3.5" />
+                </button>
+              )}
               {editMode && (
                 <button
                   onClick={() => setConfirmDelete(true)}
@@ -606,6 +627,89 @@ export function AnimeDetail({
                 }}
               >
                 Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {carryOpen && (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            setCarryOpen(false);
+          }}
+          className="fixed inset-0 z-[110] flex items-center justify-center p-6"
+          style={{
+            background: 'rgba(0,0,0,.6)',
+            animation: 'cgFadeIn .15s ease',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-[380px] max-w-full rounded-2xl border p-5"
+            style={{
+              background: '#16161a',
+              borderColor: 'rgba(255,255,255,.1)',
+              boxShadow: '0 30px 60px -20px rgba(0,0,0,.8)',
+              animation: 'cgFadeScale .2s ease both',
+            }}
+          >
+            <h3 className="m-0 mb-2 text-[15px] font-semibold text-zinc-50">
+              Mover a otra temporada
+            </h3>
+            <p className="m-0 mb-3 text-[13px] leading-relaxed text-white/65">
+              Se moverá &quot;{anime.title}&quot; con todo su progreso a la
+              temporada que elijas.
+            </p>
+            <div className="mb-4 flex max-h-[240px] flex-col gap-1.5 overflow-auto">
+              {otherSeasons.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setCarryTarget(s.id)}
+                  className="rounded-lg border px-3 py-2 text-left text-[13px]"
+                  style={{
+                    background:
+                      carryTarget === s.id
+                        ? `${ACCENT}22`
+                        : 'rgba(255,255,255,.03)',
+                    borderColor:
+                      carryTarget === s.id
+                        ? `${ACCENT}66`
+                        : 'rgba(255,255,255,.08)',
+                    color:
+                      carryTarget === s.id ? '#fff' : 'rgba(255,255,255,.75)',
+                  }}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setCarryOpen(false)}
+                className="rounded-lg border px-3.5 py-2 text-xs text-white/70"
+                style={{
+                  background: 'transparent',
+                  borderColor: 'rgba(255,255,255,.08)',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                disabled={!carryTarget}
+                onClick={() => {
+                  if (!carryTarget) return;
+                  onCarryOver(carryTarget);
+                  setCarryOpen(false);
+                  requestClose();
+                }}
+                className="rounded-lg px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
+                style={{
+                  background: `linear-gradient(180deg, ${ACCENT}, color-mix(in oklch, ${ACCENT} 70%, #000))`,
+                }}
+              >
+                Confirmar
               </button>
             </div>
           </div>

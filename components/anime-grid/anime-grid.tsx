@@ -24,8 +24,10 @@ interface PendingChanges {
 interface AnimeGridProps {
   animes: Anime[];
   season: Season | null;
+  otherSeasons: Season[];
   onSaveChanges: (animeId: string, seasonId: string, changes: PendingChanges) => void;
   onDeleteAnime: (anime: Anime) => void;
+  onCarryOver: (anime: Anime, targetSeasonId: string) => void;
   onAddAnime: () => void;
   savedFlash: boolean;
 }
@@ -33,8 +35,10 @@ interface AnimeGridProps {
 export function AnimeGrid({
   animes,
   season,
+  otherSeasons,
   onSaveChanges,
   onDeleteAnime,
+  onCarryOver,
   onAddAnime,
   savedFlash,
 }: AnimeGridProps) {
@@ -330,6 +334,10 @@ export function AnimeGrid({
             onEpisodesChange={(n) => handleEpisodesChange(selectedAnime, n)}
             onMarkNext={(u) => handleMarkNext(selectedAnime, u)}
             onDelete={() => onDeleteAnime(selectedAnime)}
+            otherSeasons={otherSeasons}
+            onCarryOver={(targetSeasonId) =>
+              onCarryOver(selectedAnime, targetSeasonId)
+            }
           />
         )}
       </AnimatePresence>
