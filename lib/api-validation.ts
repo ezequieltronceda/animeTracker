@@ -32,6 +32,16 @@ export function isFiniteNonNegativeInt(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < 10000;
 }
 
+/**
+ * MyAnimeList ids are positive integers with no small upper bound — modern
+ * entries are already in the tens of thousands (a Summer 2026 show can be
+ * ~55000+). Validate them separately from `isFiniteNonNegativeInt`, whose
+ * 10000 cap is meant for episode counts, not ids.
+ */
+export function isValidMalId(v: unknown): v is number {
+  return typeof v === 'number' && Number.isInteger(v) && v > 0 && v < 100_000_000;
+}
+
 const SEIYUU_IDS = ['koyasu', 'hanazawa'] as const;
 
 export function isValidSeiyuuArray(v: unknown): v is string[] {
