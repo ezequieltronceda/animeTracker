@@ -8,6 +8,7 @@ import {
   isFiniteNonNegativeInt,
   isKnownSeasonId,
   isValidDay,
+  isValidMalId,
   isValidSeiyuuArray,
   isValidStatus,
   isValidUser,
@@ -117,7 +118,7 @@ export async function POST(request: Request) {
     }
 
     if (action === 'createAnime') {
-      if (!isFiniteNonNegativeInt(malId)) {
+      if (!isValidMalId(malId)) {
         return NextResponse.json({ error: 'Invalid malId' }, { status: 400 });
       }
       if (!(await isKnownSeasonId(seasonId))) {
