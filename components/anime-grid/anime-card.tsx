@@ -11,7 +11,8 @@ import { Avatar } from './_internal/avatar';
 import { ProgressBar } from './_internal/progress-bar';
 import { DayPicker } from './_internal/day-picker';
 import { StatusSelect } from './_internal/status-select';
-import type { Anime, User, UserStatus } from '@/types';
+import { SeiyuuToggles } from './_internal/seiyuu-toggles';
+import type { Anime, SeiyuuId, User, UserStatus } from '@/types';
 
 function hashHue(seed: string): number {
   let h = 0;
@@ -241,6 +242,8 @@ interface AnimeCardProps {
   ezeEpisodes: number[];
   panchoEpisodes: number[];
   displayMax: number;
+  seiyuus: SeiyuuId[];
+  onSeiyuuToggle: (id: SeiyuuId) => void;
   onOpenDetail: () => void;
   onEpisodeToggle: (user: User, ep: number, done: boolean) => void;
   onStatusChange: (user: User, s: UserStatus) => void;
@@ -258,6 +261,8 @@ export function AnimeCard({
   ezeEpisodes,
   panchoEpisodes,
   displayMax,
+  seiyuus,
+  onSeiyuuToggle,
   onOpenDetail,
   onEpisodeToggle,
   onStatusChange,
@@ -416,6 +421,9 @@ export function AnimeCard({
         )}
 
         <div className="absolute bottom-2.5 left-3 right-3">
+          <div className="mb-2">
+            <SeiyuuToggles seiyuus={seiyuus} onToggle={onSeiyuuToggle} />
+          </div>
           <div
             className="line-clamp-2 text-[15px] font-bold leading-[1.15] tracking-[-0.2px] text-white"
             style={{ textShadow: '0 1px 4px rgba(0,0,0,.6)' }}

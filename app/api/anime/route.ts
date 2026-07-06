@@ -8,6 +8,7 @@ import {
   isFiniteNonNegativeInt,
   isKnownSeasonId,
   isValidDay,
+  isValidSeiyuuArray,
   isValidStatus,
   isValidUser,
 } from '@/lib/api-validation';
@@ -157,6 +158,7 @@ export async function POST(request: Request) {
         genres: Array.isArray(animeData.genres)
           ? animeData.genres.map((g: { name: string }) => g.name)
           : [],
+        seiyuus: [],
         users: {
           eze: { status: 'pendiente', episodesWatched: [] },
           pancho: { status: 'pendiente', episodesWatched: [] },
@@ -181,8 +183,16 @@ export async function PUT(request: Request) {
 
   try {
     const body = await request.json();
-    const { id, seasonId, user, status, episodesWatched, day, maxEpisodes } =
-      body ?? {};
+    const {
+      id,
+      seasonId,
+      user,
+      status,
+      episodesWatched,
+      day,
+      maxEpisodes,
+      seiyuus,
+    } = body ?? {};
 
     if (typeof id !== 'string' || id.length === 0 || id.length > 100) {
       return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
@@ -232,6 +242,13 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: 'Invalid day' }, { status: 400 });
       }
       updateData.day = day;
+    }
+
+    if (seiyuus !== undefined) {
+      if (!isValidSeiyuuArray(seiyuus)) {
+        return NextResponse.json({ error: 'Invalid seiyuus' }, { status: 400 });
+      }
+      updateData.seiyuus = seiyuus;
     }
 
     if (Object.keys(updateData).length === 0) {

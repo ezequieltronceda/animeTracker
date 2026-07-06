@@ -1,11 +1,12 @@
 import { create } from 'zustand';
-import type { Anime, Season, UserStatus, User } from '@/types';
+import type { Anime, Season, SeiyuuId, UserStatus, User } from '@/types';
 
 interface PendingChanges {
   episodesWatched?: { [user in User]?: number[] };
   maxEpisodes?: number;
   status?: { [user in User]?: UserStatus };
   day?: string;
+  seiyuus?: SeiyuuId[];
 }
 
 interface UIState {

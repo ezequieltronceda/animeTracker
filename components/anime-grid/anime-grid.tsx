@@ -11,13 +11,14 @@ import { SectionHeader } from './section-header';
 import { nextUnwatched } from './episode-grid';
 import { useLowPowerMode } from '@/hooks/use-low-power-mode';
 import { ACCENT } from '@/lib/anime-constants';
-import type { Anime, Season, User, UserStatus } from '@/types';
+import type { Anime, Season, SeiyuuId, User, UserStatus } from '@/types';
 
 interface PendingChanges {
   episodesWatched?: { [user in User]?: number[] };
   maxEpisodes?: number;
   status?: { [user in User]?: UserStatus };
   day?: string;
+  seiyuus?: SeiyuuId[];
 }
 
 interface AnimeGridProps {
@@ -209,6 +210,19 @@ export function AnimeGrid({
     [editMode, pendingChanges, setPendingChanges],
   );
 
+  const handleSeiyuuToggle = useCallback(
+    (anime: Anime, id: SeiyuuId) => {
+      // Quick-mark works even outside edit mode and saves immediately, like the
+      // "mark next episode" button — no pending-changes staging.
+      const current = anime.seiyuus ?? [];
+      const next = current.includes(id)
+        ? current.filter((s) => s !== id)
+        : [...current, id];
+      onSaveChanges(anime.id, anime.seasonId, { seiyuus: next });
+    },
+    [onSaveChanges],
+  );
+
   const handleEpisodesChange = useCallback(
     (anime: Anime, n: number) => {
       if (!editMode) return;
@@ -276,6 +290,8 @@ export function AnimeGrid({
                   ezeEpisodes={getLocalEpisodes(a, 'eze')}
                   panchoEpisodes={getLocalEpisodes(a, 'pancho')}
                   displayMax={getDisplayMax(a)}
+                  seiyuus={a.seiyuus ?? []}
+                  onSeiyuuToggle={(id) => handleSeiyuuToggle(a, id)}
                   onOpenDetail={() => openDetail(a.id)}
                   onEpisodeToggle={(u, ep, done) =>
                     handleEpisodeToggle(a, u, ep, done)
@@ -304,6 +320,8 @@ export function AnimeGrid({
             ezeEpisodes={getLocalEpisodes(selectedAnime, 'eze')}
             panchoEpisodes={getLocalEpisodes(selectedAnime, 'pancho')}
             displayMax={getDisplayMax(selectedAnime)}
+            seiyuus={selectedAnime.seiyuus ?? []}
+            onSeiyuuToggle={(id) => handleSeiyuuToggle(selectedAnime, id)}
             onEpisodeToggle={(u, ep, done) =>
               handleEpisodeToggle(selectedAnime, u, ep, done)
             }

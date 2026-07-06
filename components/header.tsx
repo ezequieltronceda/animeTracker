@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useUIStore } from '@/store/ui-store';
 import { DAYS, formatSeasonName } from '@/lib/constants';
-import type { Season } from '@/types';
+import type { Anime, Season } from '@/types';
 import {
   Dialog,
   DialogContent,
@@ -25,11 +25,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 import { Avatar } from '@/components/anime-grid/_internal/avatar';
-import { ACCENT, DAY_LABELS } from '@/lib/anime-constants';
+import { ACCENT, DAY_LABELS, SEIYUUS, SEIYUU_IDS } from '@/lib/anime-constants';
 
 interface HeaderProps {
   onAddClick: () => void;
   seasons?: Season[];
+  animes?: Anime[];
   onCreateSeason: (name: string) => void;
   onSaveAll?: () => void;
   onRefreshJikan?: () => void;
@@ -39,6 +40,7 @@ interface HeaderProps {
 export function Header({
   onAddClick,
   seasons,
+  animes,
   onCreateSeason,
   onSaveAll,
   onRefreshJikan,
@@ -61,6 +63,13 @@ export function Header({
 
   const safeSeasons = Array.isArray(seasons) ? seasons : [];
   const pendingCount = getPendingChangesCount();
+
+  const safeAnimes = Array.isArray(animes) ? animes : [];
+  const seiyuuCounts = SEIYUU_IDS.map((id) => ({
+    id,
+    ...SEIYUUS[id],
+    count: safeAnimes.filter((a) => a.seiyuus?.includes(id)).length,
+  }));
 
   const handleCreateSeason = () => {
     if (newSeasonName.trim()) {
@@ -114,6 +123,20 @@ export function Header({
           </div>
 
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              {seiyuuCounts.map((s) => (
+                <SeiyuuCounter
+                  key={s.id}
+                  name={s.name}
+                  image={s.image}
+                  color={s.color}
+                  count={s.count}
+                />
+              ))}
+            </div>
+
+            <div className="hidden h-[22px] w-px bg-white/10 sm:block" />
+
             <div className="hidden items-center gap-1.5 sm:flex">
               <Avatar user="eze" size={26} />
               <Avatar user="pancho" size={26} />
@@ -219,6 +242,55 @@ export function Header({
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function SeiyuuCounter({
+  name,
+  image,
+  color,
+  count,
+}: {
+  name: string;
+  image: string;
+  color: string;
+  count: number;
+}) {
+  const active = count > 0;
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full border py-[3px] pl-[3px] pr-2.5"
+      style={{
+        background: active ? `${color}1f` : 'rgba(255,255,255,.03)',
+        borderColor: active ? `${color}66` : 'rgba(255,255,255,.08)',
+        transition: 'background .2s ease, border-color .2s ease',
+      }}
+      title={`${name}: aparece en ${count} anime${count === 1 ? '' : 's'} de la temporada`}
+    >
+      <img
+        src={image}
+        alt={name}
+        className="h-[22px] w-[22px] rounded-full object-cover"
+        style={{
+          boxShadow: active
+            ? `0 0 0 1.5px ${color}`
+            : 'inset 0 0 0 1px rgba(255,255,255,.12)',
+          filter: active ? 'none' : 'grayscale(1)',
+          opacity: active ? 1 : 0.55,
+        }}
+        loading="lazy"
+        draggable={false}
+      />
+      <span
+        className="text-[13px] font-bold tabular-nums"
+        style={{
+          color: active ? color : 'rgba(255,255,255,.5)',
+          fontFamily: 'var(--font-geist-mono), ui-monospace, monospace',
+        }}
+      >
+        {count}
+      </span>
+    </span>
   );
 }
 

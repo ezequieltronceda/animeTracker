@@ -1,4 +1,4 @@
-import type { UserStatus } from '@/types';
+import type { SeiyuuId, UserStatus } from '@/types';
 
 export const ACCENT = '#6366f1';
 
@@ -6,6 +6,26 @@ export const USERS = {
   eze: { name: 'Eze', initial: 'E', color: '#22c55e' },
   pancho: { name: 'Pancho', initial: 'P', color: '#a78bfa' },
 } as const;
+
+export const SEIYUUS: Record<
+  SeiyuuId,
+  { name: string; short: string; image: string; color: string }
+> = {
+  koyasu: {
+    name: 'Takehito Koyasu',
+    short: 'Koyasu',
+    image: '/seiyuu/koyasu.png',
+    color: '#e0b83a', // dorado DIO
+  },
+  hanazawa: {
+    name: 'Kana Hanazawa',
+    short: 'Hanazawa',
+    image: '/seiyuu/hanazawa.png',
+    color: '#6ec6c9', // turquesa Mayuri
+  },
+};
+
+export const SEIYUU_IDS = Object.keys(SEIYUUS) as SeiyuuId[];
 
 export const DAY_LABELS: Record<string, { short: string; full: string }> = {
   lunes: { short: 'Lun', full: 'Lunes' },

@@ -27,6 +27,7 @@ export interface Anime {
   score?: number;
   synopsis?: string | null;
   genres?: string[];
+  seiyuus?: SeiyuuId[];
   users: {
     eze: UserData;
     pancho: UserData;
@@ -44,3 +45,5 @@ export interface SeasonWithAnime extends Season {
 }
 
 export type User = 'eze' | 'pancho';
+
+export type SeiyuuId = 'koyasu' | 'hanazawa';
