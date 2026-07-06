@@ -9,7 +9,7 @@ import { AddAnimeDrawer } from '@/components/add-anime-drawer';
 import { ConfirmModal } from '@/components/confirm-modal';
 import { LoginScreen } from '@/components/login-screen';
 import { sortSeasonsByDate } from '@/lib/constants';
-import type { Anime, Season, User, UserStatus } from '@/types';
+import type { Anime, Season, SeiyuuId, User, UserStatus } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface PendingChanges {
@@ -17,6 +17,7 @@ interface PendingChanges {
   status?: { eze?: UserStatus; pancho?: UserStatus };
   maxEpisodes?: number;
   day?: string;
+  seiyuus?: SeiyuuId[];
 }
 
 export default function HomeClient() {
@@ -158,6 +159,20 @@ export default function HomeClient() {
       );
     }
 
+    if (changes.seiyuus !== undefined) {
+      updatePromises.push(
+        fetch('/api/anime', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: animeId,
+            seasonId,
+            seiyuus: changes.seiyuus,
+          }),
+        }).then(() => {})
+      );
+    }
+
     Promise.all(updatePromises)
       .then(() => fetchData(seasonId))
       .catch(err => console.error('Error saving changes:', err));
@@ -245,16 +260,24 @@ export default function HomeClient() {
   }, []);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    // Only load data once we're authenticated. Fetching earlier hits /api/anime
+    // with no valid session (401) and leaves seasons/animes empty; re-running
+    // when auth flips to true means a fresh login loads the DB without an F5.
+    if (isAuthenticated) {
+      fetchData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     if (selectedSeason) {
       fetchData(selectedSeason.id);
     } else {
       setAnimes([]);
     }
-  }, [selectedSeason]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSeason, isAuthenticated]);
 
   if (isAuthenticated === null) {
     return null;
@@ -270,6 +293,7 @@ export default function HomeClient() {
       <Header
         onAddClick={openDrawer}
         seasons={seasons}
+        animes={animes}
         onCreateSeason={handleCreateSeason}
         onSaveAll={handleSaveAll}
         onRefreshJikan={handleRefreshJikan}

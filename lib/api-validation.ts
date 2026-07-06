@@ -32,6 +32,16 @@ export function isFiniteNonNegativeInt(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < 10000;
 }
 
+const SEIYUU_IDS = ['koyasu', 'hanazawa'] as const;
+
+export function isValidSeiyuuArray(v: unknown): v is string[] {
+  return (
+    Array.isArray(v) &&
+    v.length <= SEIYUU_IDS.length &&
+    v.every((s) => (SEIYUU_IDS as readonly string[]).includes(s))
+  );
+}
+
 export function isEpisodeArray(v: unknown): v is number[] {
   return (
     Array.isArray(v) &&

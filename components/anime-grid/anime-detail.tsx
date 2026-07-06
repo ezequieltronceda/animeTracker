@@ -15,12 +15,13 @@ import { STATUS_LABELS } from '@/lib/constants';
 import { ACCENT, DAY_LABELS, STATUS_SOFT, USERS } from '@/lib/anime-constants';
 import { toJKAnimeSlug, upgradeMalImage } from '@/lib/utils';
 import { useLowPowerMode } from '@/hooks/use-low-power-mode';
-import type { Anime, User, UserStatus } from '@/types';
+import type { Anime, SeiyuuId, User, UserStatus } from '@/types';
 import { PaginatedEpisodeGrid, nextUnwatched } from './episode-grid';
 import { Avatar } from './_internal/avatar';
 import { ProgressBar } from './_internal/progress-bar';
 import { DayPicker as DayPickerInline } from './_internal/day-picker';
 import { StatusSelect } from './_internal/status-select';
+import { SeiyuuToggles } from './_internal/seiyuu-toggles';
 import { Chip, Section } from './_internal/chip';
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -35,6 +36,8 @@ interface AnimeDetailProps {
   ezeEpisodes: number[];
   panchoEpisodes: number[];
   displayMax: number;
+  seiyuus: SeiyuuId[];
+  onSeiyuuToggle: (id: SeiyuuId) => void;
   onEpisodeToggle: (user: User, ep: number, done: boolean) => void;
   onStatusChange: (user: User, s: UserStatus) => void;
   onDayChange: (day: string) => void;
@@ -52,6 +55,8 @@ export function AnimeDetail({
   ezeEpisodes,
   panchoEpisodes,
   displayMax,
+  seiyuus,
+  onSeiyuuToggle,
   onEpisodeToggle,
   onStatusChange,
   onDayChange,
@@ -454,6 +459,14 @@ export function AnimeDetail({
                 ) : (
                   <EmptyHint />
                 )}
+              </Section>
+
+              <Section title="Seiyuus">
+                <SeiyuuToggles
+                  seiyuus={seiyuus}
+                  onToggle={onSeiyuuToggle}
+                  variant="full"
+                />
               </Section>
 
               <Section title="Enlaces">
